@@ -20,11 +20,24 @@ PYTHONPATH=src python -m uvicorn avix.api.main:app --reload --port 8000
 # open http://localhost:8000  -> the checker page
 ```
 
+> ⚠️ **Data status — SYNTHETIC DEMO ONLY.** Everything shipped in this repo is
+> seeded synthetic data (every business is suffixed `(DEMO)`). It exists only so the
+> app runs and the tests go green. **It is not evidence and must not be treated as a
+> publishable Index.** Real market publication requires live captures / imported
+> tracker data first (see *Load your real data* below). Until you import real
+> captures, no league table here reflects what any AI assistant actually returned.
+
 ## Verify it works
 ```bash
 PYTHONPATH=src python -m pytest tests/ -q        # unit tests (scoring engine)
 PYTHONPATH=.   python scripts/smoke_test.py      # end-to-end smoke (all layers + API)
 ```
+
+## Deployment status
+**Not configured yet.** The app runs locally as shipped (`uvicorn`/`gunicorn`); no
+hosting, domain, CI, or runtime environment is provisioned in this repo. The
+**intended deployment target is [Lovable](https://lovable.dev)** — not yet set up.
+Do not treat anything here as deployed or production-ready.
 
 ## Load your real data (replaces the demo)
 The capture grain matches the tracker spreadsheet's **Run Log** exactly.
