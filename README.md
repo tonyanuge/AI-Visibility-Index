@@ -1,5 +1,9 @@
 # AI Visibility Index ("AI Mystery Shopping")
 
+> **AI Visibility Index is a product of TraceLogic Limited.** It is a distinct
+> application operated by TraceLogic Limited — not merged into any other TraceLogic
+> system. © 2026 TraceLogic Limited. All rights reserved. See [LICENSE](LICENSE).
+
 A working productised-service backend + public **checker** for measuring what AI
 assistants (ChatGPT, Gemini, Perplexity) recommend for local buying-intent queries,
 scoring every business on visibility / rank / accuracy / share-of-voice, and turning

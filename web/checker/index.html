@@ -1,47 +1,119 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Free AI Visibility Check</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free AI Visibility Check — AI Visibility Index</title>
+<meta name="description" content="Check whether ChatGPT, Gemini and Perplexity recommend your local business. A dated snapshot of what AI assistants returned under stated conditions.">
 <style>
-  :root{--ink:#16202b;--muted:#5d6b7a;--line:#e4e9ee;--brand:#1f6f6b;--bad:#c0392b;--warn:#b8860b}
-  *{box-sizing:border-box} body{margin:0;font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial;color:var(--ink);background:#f6f8f9}
-  .wrap{max-width:640px;margin:0 auto;padding:32px 20px}
-  h1{font-size:26px;margin:0 0 6px} .sub{color:var(--muted);margin:0 0 24px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
-  label{display:block;font-weight:600;font-size:13px;margin:12px 0 5px}
-  input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:15px}
-  button{margin-top:18px;width:100%;background:var(--brand);color:#fff;border:0;border-radius:9px;padding:13px;font-size:16px;font-weight:600;cursor:pointer}
-  button:disabled{opacity:.6}
-  .verdict{font-weight:700;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
-  .invisible{color:var(--bad)} .beaten{color:var(--warn)} .strong{color:var(--brand)}
-  .pill{display:inline-block;background:#eef3f3;border-radius:999px;padding:3px 10px;margin:3px 4px 0 0;font-size:13px}
+  :root{
+    --ink:#142128; --ink-2:#26383f; --paper:#f4f7f7; --card:#ffffff;
+    --line:#dce5e6; --teal:#0e7c7b; --teal-d:#0a5e5d; --signal:#e0532a;
+    --amber:#caa23a; --muted:#5d6f76;
+    --display:'Space Grotesk',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif;
+    --mono:ui-monospace,'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--body),system-ui,Segoe UI,Roboto,Arial;font-size:16px;line-height:1.55;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:640px;margin:0 auto;padding:0 22px}
+  a{color:var(--teal-d)}
+  /* top bar — matches landing */
+  .topbar{border-bottom:1px solid var(--line);background:rgba(244,247,247,.9);
+    backdrop-filter:saturate(1.2) blur(6px);position:sticky;top:0;z-index:10}
+  .topbar .wrap{max-width:1040px;display:flex;align-items:center;justify-content:space-between;height:60px}
+  .mark{font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:.02em;text-decoration:none;color:var(--ink)}
+  .mark b{color:var(--teal)} .mark .dot{color:var(--signal)}
+  .navlink{font-family:var(--display),system-ui,sans-serif;font-weight:600;font-size:14px;
+    text-decoration:none;color:var(--ink);border:1px solid var(--line);padding:9px 16px;border-radius:9px}
+  .navlink:hover{border-color:var(--teal)}
+  /* hero */
+  .hero{padding:48px 0 8px;text-align:center}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--teal-d);margin:0 0 14px}
+  h1{font-family:var(--display),system-ui,sans-serif;font-weight:700;
+    font-size:clamp(28px,4.6vw,40px);line-height:1.07;letter-spacing:-.02em;margin:0 auto 14px;max-width:20ch}
+  h1 .em{color:var(--signal)}
+  .sub{font-size:17px;color:var(--ink-2);max-width:52ch;margin:0 auto 8px}
+  main{padding-bottom:28px}
+  /* cards / panel */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin:16px 0;
+    box-shadow:0 1px 0 rgba(20,33,40,.03),0 14px 34px -26px rgba(20,33,40,.35)}
+  .card h2{font-family:var(--display),system-ui,sans-serif;font-size:17px;margin:0 0 4px}
+  .card .hint{font-size:13px;color:var(--muted);margin:0 0 14px}
+  label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);margin:14px 0 6px}
+  input,select{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:10px;
+    font-size:15px;font-family:var(--body),system-ui,sans-serif;background:#fff;color:var(--ink)}
+  input:focus-visible,select:focus-visible{outline:2px solid var(--teal);outline-offset:1px;border-color:var(--teal)}
+  button{margin-top:18px;width:100%;background:var(--teal);color:#fff;border:0;border-radius:10px;
+    padding:14px;font-size:15px;font-weight:600;font-family:var(--display),system-ui,sans-serif;cursor:pointer;
+    transition:background .15s,transform .05s}
+  button:hover{background:var(--teal-d)} button:active{transform:translateY(1px)}
+  button:disabled{opacity:.55;cursor:default}
+  .fineprint{font-size:12px;color:var(--muted);margin-top:13px;line-height:1.45}
+  /* verdict result */
+  .verdict{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase}
+  .invisible{color:var(--signal)} .beaten{color:var(--amber)} .strong{color:var(--teal)}
+  .pill{display:inline-block;font-family:var(--mono);font-size:12.5px;background:#eef4f3;
+    border:1px solid var(--line);border-radius:999px;padding:4px 11px;margin:6px 6px 0 0;color:var(--ink-2)}
   .muted{color:var(--muted);font-size:13px} .hide{display:none}
-  .cta{display:block;text-align:center;background:var(--brand);color:#fff;text-decoration:none;border-radius:9px;padding:13px;font-weight:600;margin-top:14px}
-</style></head>
-<body><div class="wrap">
-  <h1>Is AI recommending your business?</h1>
-  <p class="sub">We asked ChatGPT, Gemini and Perplexity the questions your customers ask. See — free — whether they recommend you, ignore you, or get you wrong.</p>
+  .cta{display:block;text-align:center;background:var(--signal);color:#fff;text-decoration:none;
+    border-radius:10px;padding:14px;font-weight:600;font-family:var(--display),system-ui,sans-serif;margin-top:16px}
+  .cta.calm{background:var(--teal)}
+  .ok{color:var(--teal-d);font-size:14px;margin-top:10px}
+  /* footer — matches landing */
+  footer{padding:32px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px;margin-top:8px}
+  footer .wrap{max-width:1040px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  footer .own{width:100%;color:var(--ink-2)}
+</style>
+</head>
+<body>
 
+<header class="topbar"><div class="wrap">
+  <a class="mark" href="/"><b>AI</b> Visibility Index<span class="dot">.</span></a>
+  <a class="navlink" href="/">← Overview</a>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <p class="eyebrow">Free check · ChatGPT · Gemini · Perplexity</p>
+  <h1>Is AI recommending <span class="em">your business?</span></h1>
+  <p class="sub">We pose the questions your customers ask to AI assistants under stated, dated conditions.
+    See — free — whether they recommend you, rank you low, or never name you.</p>
+</div></section>
+
+<main class="wrap">
   <div class="card" id="formCard">
-    <label>Market</label>
+    <h2>Check your business</h2>
+    <p class="hint">Pick your market, enter your name — instant result from the scored data.</p>
+    <label for="cell">Market</label>
     <select id="cell"></select>
-    <label>Your business name</label>
+    <label for="business">Your business name</label>
     <input id="business" placeholder="e.g. Riverside Physio" autocomplete="off">
     <button id="go">Show me my AI visibility — free</button>
-    <p class="muted" style="margin-top:12px">Based on what the AIs returned under controlled conditions on a dated snapshot. Results vary by location and session.</p>
+    <p class="fineprint">Based on what the AIs returned under controlled conditions on a dated snapshot.
+      Results vary by location and session. No ranking is guaranteed.</p>
   </div>
 
   <div class="card hide" id="resultCard"></div>
 
   <div class="card hide" id="leadCard">
-    <strong>Get the full report</strong>
-    <p class="muted">Every question, the competitors ahead of you, and the fixes — sent to your inbox.</p>
-    <label>Email</label><input id="email" type="email" placeholder="you@business.ie">
+    <h2>Get the full report</h2>
+    <p class="hint">Every question, the competitors ahead of you, and the fixes — sent to your inbox.</p>
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="you@business.ie">
     <button id="send">Send my full report</button>
-    <p class="muted hide" id="leadDone">Thanks — we'll be in touch with your full report.</p>
+    <p class="ok hide" id="leadDone">Thanks — we'll be in touch with your full report.</p>
   </div>
-</div>
+</main>
+
+<footer><div class="wrap">
+  <span class="own">AI Visibility Index is a product of TraceLogic Limited.</span>
+  <span>A dated snapshot of what AI assistants say. Not affiliated with OpenAI, Google or Perplexity.</span>
+  <span>© 2026 TraceLogic Limited. All rights reserved.</span>
+</div></footer>
+
 <script>
 const $ = s => document.querySelector(s);
 let LAST = null;
@@ -77,7 +149,7 @@ function render(v){
   } else if(v.state === 'STRONG'){
     html = `<div class="verdict strong">Top AI recommendation</div>
       <p><b>${v.business}</b> is the top AI pick right now. Positions drift — defend it with monitoring.</p>
-      ${cfg.monitoring_url?`<a class="cta" href="${cfg.monitoring_url}">Set up monthly monitoring</a>`:''}`;
+      ${cfg.monitoring_url?`<a class="cta calm" href="${cfg.monitoring_url}">Set up monthly monitoring</a>`:''}`;
     rc.innerHTML = html; $('#leadCard').classList.remove('hide'); return;
   } else {
     html = `<div class="verdict">Not mapped yet</div>
@@ -95,4 +167,6 @@ $('#send').onclick = async () => {
   $('#leadDone').classList.remove('hide'); $('#send').disabled = true;
 };
 loadCells();
-</script></body></html>
+</script>
+</body>
+</html>
