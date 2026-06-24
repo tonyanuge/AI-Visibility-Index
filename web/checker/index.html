@@ -63,6 +63,7 @@
     border-radius:10px;padding:14px;font-weight:600;font-family:var(--display),system-ui,sans-serif;margin-top:16px}
   .cta.calm{background:var(--teal)}
   .ok{color:var(--teal-d);font-size:14px;margin-top:10px}
+  .err{color:var(--signal);font-size:14px;margin-top:10px;font-weight:500}
   /* footer — matches landing */
   footer{padding:32px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px;margin-top:8px}
   footer .wrap{max-width:1040px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
@@ -104,6 +105,7 @@
     <label for="email">Email</label>
     <input id="email" type="email" placeholder="you@business.ie">
     <button id="send">Send my full report</button>
+    <p class="err hide" id="leadErr"></p>
     <p class="ok hide" id="leadDone">Thanks — we'll be in touch with your full report.</p>
   </div>
 </main>
@@ -161,9 +163,33 @@ function render(v){
   rc.innerHTML = html; $('#leadCard').classList.remove('hide');
 }
 $('#send').onclick = async () => {
-  if(!LAST) return; const email = $('#email').value.trim(); if(!email) return;
-  await fetch('/api/leads', {method:'POST',headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({business:LAST.business,email,category:LAST.category,area:LAST.area,verdict:LAST.v.state})});
+  if(!LAST) return;
+  const input = $('#email'); const email = input.value.trim();
+  const err = $('#leadErr');
+  // client-side validation: require a non-empty, browser-valid email before sending
+  if(!email || !input.checkValidity()){
+    input.reportValidity();
+    err.textContent = 'Please enter a valid email address.'; err.classList.remove('hide');
+    return;
+  }
+  err.classList.add('hide');
+  $('#send').disabled = true;
+  let r;
+  try{
+    r = await fetch('/api/leads', {method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({business:LAST.business,email,category:LAST.category,area:LAST.area,verdict:LAST.v.state})});
+  }catch(e){
+    err.textContent = 'Could not send — please check your connection and try again.';
+    err.classList.remove('hide'); $('#send').disabled = false; return;
+  }
+  if(!r.ok){
+    // backend rejected (e.g. 422 invalid email) — show error, keep the button usable for a retry
+    err.textContent = r.status === 422
+      ? 'That email looks invalid. Please correct it and try again.'
+      : 'Something went wrong sending your report. Please try again.';
+    err.classList.remove('hide'); $('#send').disabled = false; return;
+  }
+  // success only on a 2xx response
   $('#leadDone').classList.remove('hide'); $('#send').disabled = true;
 };
 loadCells();

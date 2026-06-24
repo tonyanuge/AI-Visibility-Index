@@ -64,6 +64,10 @@ def main():
     r2 = client.post("/api/leads", json={"business": "X", "email": "a@b.ie",
                      "category": "Physiotherapists", "area": "Dublin", "verdict": "INVISIBLE"})
     check("POST /api/leads ok", r2.status_code == 200)
+    # ISSUE-1 contract: invalid email must be rejected (non-2xx) so the checker UI shows an error, not success
+    bad = client.post("/api/leads", json={"business": "X", "email": "not-an-email",
+                      "category": "Physiotherapists", "area": "Dublin", "verdict": "INVISIBLE"})
+    check("POST /api/leads rejects invalid email (non-2xx)", bad.status_code >= 400)
     home = client.get("/")
     check("GET / serves landing page", home.status_code == 200 and "checker" in home.text.lower())
     chk = client.get("/checker")
