@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Visibility Index — is AI recommending your business?</title>
+<meta name="description" content="AI Mystery Shopping: see whether ChatGPT, Gemini and Perplexity recommend your local business — or name your competitors instead. A dated snapshot of what AI assistants return.">
+<style>
+  :root{
+    --ink:#142128; --ink-2:#26383f; --paper:#f4f7f7; --card:#ffffff;
+    --line:#dce5e6; --teal:#0e7c7b; --teal-d:#0a5e5d; --signal:#e0532a;
+    --amber:#caa23a; --muted:#5d6f76;
+    --display:'Space Grotesk',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif;
+    --mono:ui-monospace,'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--body),system-ui,Segoe UI,Roboto,Arial;font-size:16px;line-height:1.55;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+  a{color:var(--teal-d)}
+  /* top bar */
+  .topbar{border-bottom:1px solid var(--line);background:rgba(244,247,247,.9);
+    backdrop-filter:saturate(1.2) blur(6px);position:sticky;top:0;z-index:10}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .mark{font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:.02em}
+  .mark b{color:var(--teal)} .mark .dot{color:var(--signal)}
+  .navcta{font-family:var(--display),system-ui,sans-serif;font-weight:600;font-size:14px;
+    text-decoration:none;background:var(--teal);color:#fff;padding:9px 16px;border-radius:9px}
+  .navcta:hover{background:var(--teal-d)}
+  /* hero */
+  .hero{padding:64px 0 44px;text-align:center}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--teal-d);margin:0 0 18px}
+  h1{font-family:var(--display),system-ui,sans-serif;font-weight:700;
+    font-size:clamp(32px,5.2vw,52px);line-height:1.05;letter-spacing:-.02em;margin:0 auto 18px;max-width:18ch}
+  h1 .em{color:var(--signal)}
+  .lede{font-size:19px;color:var(--ink-2);max-width:60ch;margin:0 auto 30px}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn{font-family:var(--display),system-ui,sans-serif;font-weight:600;font-size:16px;
+    text-decoration:none;border-radius:11px;padding:15px 26px;display:inline-block}
+  .btn-primary{background:var(--signal);color:#fff}
+  .btn-primary:hover{filter:brightness(.95)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn-ghost:hover{border-color:var(--teal)}
+  .micro{font-size:13px;color:var(--muted);margin-top:16px}
+  /* bands */
+  .band{padding:54px 0;border-top:1px solid var(--line)}
+  .band-h{font-family:var(--display),system-ui,sans-serif;font-size:13px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 26px;text-align:center}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .card .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--teal-d);
+    text-transform:uppercase;margin-bottom:10px}
+  .card h3{font-family:var(--display),system-ui,sans-serif;font-size:18px;margin:0 0 8px}
+  .card p{margin:0;font-size:15px;color:var(--ink-2)}
+  /* steps */
+  .steps{list-style:none;margin:0 auto;padding:0;max-width:680px;counter-reset:s}
+  .steps li{counter-increment:s;display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--line);
+    font-size:16.5px;color:var(--ink-2)}
+  .steps li:last-child{border-bottom:0}
+  .steps li::before{content:counter(s);font-family:var(--mono);font-weight:700;color:var(--teal);
+    border:1px solid rgba(14,124,123,.45);border-radius:7px;padding:2px 10px;flex:none;height:fit-content}
+  /* honesty band */
+  .honest{background:#eef4f3;border:1px solid var(--line);border-radius:16px;padding:26px 26px 8px}
+  .honest h2{font-family:var(--display),system-ui,sans-serif;font-size:18px;margin:0 0 6px}
+  .honest .sub{color:var(--muted);font-size:14px;margin:0 0 16px}
+  .honest ul{margin:0;padding:0 0 18px 20px}
+  .honest li{margin:9px 0;font-size:15px;color:var(--ink-2)}
+  /* final cta */
+  .final{text-align:center}
+  .final h2{font-family:var(--display),system-ui,sans-serif;font-size:clamp(24px,4vw,34px);margin:0 0 14px}
+  footer{padding:36px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  @media(max-width:820px){ .cards{grid-template-columns:1fr} .hero{padding:44px 0 28px} }
+</style>
+</head>
+<body>
+
+<header class="topbar"><div class="wrap">
+  <div class="mark"><b>AI</b> Visibility Index<span class="dot">.</span></div>
+  <a class="navcta" href="/checker">Free visibility check</a>
+</div></header>
+
+<main>
+  <section class="hero"><div class="wrap">
+    <p class="eyebrow">AI Mystery Shopping · ChatGPT · Gemini · Perplexity</p>
+    <h1>When AI recommends a local business, <span class="em">is it yours?</span></h1>
+    <p class="lede">People increasingly ask AI assistants for the best business near them. The AI names a
+      handful and leaves the rest out. The AI Visibility Index measures, for buying-intent questions in a
+      given market, whether a business is recommended, ranked, or never mentioned — as a dated snapshot of
+      what the assistants returned under stated conditions.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="/checker">Run a free AI visibility check</a>
+      <a class="btn btn-ghost" href="#how">How it works</a>
+    </div>
+    <p class="micro">Free check · no account needed · results vary by location and session.</p>
+  </div></section>
+
+  <section class="band"><div class="wrap">
+    <p class="band-h">What the AI Visibility Index does</p>
+    <div class="cards">
+      <div class="card">
+        <div class="k">Visibility</div>
+        <h3>Are you recommended?</h3>
+        <p>For the questions customers actually ask, we record whether a business is named by the AI at
+          all — or absent from the answer entirely.</p>
+      </div>
+      <div class="card">
+        <div class="k">Rank &amp; share</div>
+        <h3>Where do you stand?</h3>
+        <p>When a business is named, the Index scores its position and share of recommendations against
+          others in the same market.</p>
+      </div>
+      <div class="card">
+        <div class="k">Accuracy</div>
+        <h3>Does AI get you right?</h3>
+        <p>We note where the assistants state something about a business — and flag where captured
+          answers got facts wrong, by review.</p>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="band" id="how"><div class="wrap">
+    <p class="band-h">How it works</p>
+    <ol class="steps">
+      <li>We pose the real buying-intent questions for a market to AI assistants under stated, dated conditions.</li>
+      <li>The captured answers are reviewed and scored for visibility, rank, share and accuracy.</li>
+      <li>You enter your business name in the free checker and get an instant verdict from the scored data.</li>
+      <li>If you're invisible or behind, you can request the full report for your market.</li>
+    </ol>
+  </div></section>
+
+  <section class="band"><div class="wrap">
+    <div class="honest">
+      <h2>Honest boundaries</h2>
+      <p class="sub">We only claim what the build supports.</p>
+      <ul>
+        <li><b>Dated snapshot, not a guarantee.</b> Every result reflects what AI assistants returned under
+          stated conditions on a given date. Positions drift, and answers vary by location and session.
+          We make <b>no guaranteed-ranking claim</b> and cannot promise placement in any AI answer.</li>
+        <li><b>Demo data is synthetic.</b> Until real captures are imported for a market, any sample figures
+          are clearly-labelled synthetic demo data and are <b>not</b> a publishable Index.</li>
+        <li><b>Monitoring is opt-in.</b> Automated live answer-fetching and ongoing monitoring run only when
+          explicitly configured; otherwise captures are collected manually. We don't claim always-on,
+          fully-automated AI monitoring unless it is set up.</li>
+        <li><b>Independent.</b> Not affiliated with OpenAI, Google or Perplexity.</li>
+      </ul>
+    </div>
+  </div></section>
+
+  <section class="band final"><div class="wrap">
+    <h2>See whether AI recommends your business.</h2>
+    <p class="lede">Pick your market, enter your name, get an instant verdict — free.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="/checker">Run a free AI visibility check</a>
+    </div>
+  </div></section>
+</main>
+
+<footer><div class="wrap">
+  <span>AI Visibility Index — a dated snapshot of what AI assistants say. Not affiliated with OpenAI, Google or Perplexity.</span>
+  <span>Results vary by location and session.</span>
+</div></footer>
+
+</body>
+</html>

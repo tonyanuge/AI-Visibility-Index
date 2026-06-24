@@ -64,7 +64,10 @@ def main():
     r2 = client.post("/api/leads", json={"business": "X", "email": "a@b.ie",
                      "category": "Physiotherapists", "area": "Dublin", "verdict": "INVISIBLE"})
     check("POST /api/leads ok", r2.status_code == 200)
-    check("GET / serves checker page", client.get("/").status_code == 200)
+    home = client.get("/")
+    check("GET / serves landing page", home.status_code == 200 and "checker" in home.text.lower())
+    chk = client.get("/checker")
+    check("GET /checker serves functional checker page", chk.status_code == 200 and "id=\"cell\"" in chk.text)
 
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")

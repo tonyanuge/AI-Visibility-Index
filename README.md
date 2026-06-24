@@ -8,7 +8,10 @@ scoring every business on visibility / rank / accuracy / share-of-voice, and tur
 Two surfaces on one shared engine:
 - **The Index** — scored per-category league tables (`/api/index/{category}/{area}`).
 - **The Checker** — public page returning an instant verdict (Invisible / Beaten /
-  Strong / Not-covered) and capturing the lead (`/` + `/api/checker` + `/api/leads`).
+  Strong / Not-covered) and capturing the lead (`/checker` + `/api/checker` + `/api/leads`).
+
+Page routes: `/` serves the marketing **landing page**; `/checker` serves the
+functional **checker page** (backed by the live API). The API endpoints are unchanged.
 
 ## Run it locally (≈2 minutes)
 ```bash
@@ -17,7 +20,8 @@ pip install -r requirements.txt
 
 python scripts/seed.py                                # loads synthetic demo data (2 verticals)
 PYTHONPATH=src python -m uvicorn avix.api.main:app --reload --port 8000
-# open http://localhost:8000  -> the checker page
+# open http://localhost:8000          -> the landing page
+# open http://localhost:8000/checker  -> the functional checker
 ```
 
 > ⚠️ **Data status — SYNTHETIC DEMO ONLY.** Everything shipped in this repo is

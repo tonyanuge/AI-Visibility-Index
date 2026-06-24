@@ -10,7 +10,9 @@ from .schemas import CheckRequest, LeadRequest
 
 settings = config.load_settings()
 app = FastAPI(title=settings.get("app_name", "AI Visibility Index"), version="0.1.0")
-WEB = config.ROOT / "web" / "checker"
+WEB = config.ROOT / "web"
+LANDING_PAGE = WEB / "landing" / "index.html"
+CHECKER_PAGE = WEB / "checker" / "index.html"
 
 def _conn():
     return db.connect()
@@ -66,5 +68,8 @@ def leads_export():
 
 @app.get("/")
 def home():
-    idx = WEB / "index.html"
-    return FileResponse(idx) if idx.exists() else {"app": app.title}
+    return FileResponse(LANDING_PAGE) if LANDING_PAGE.exists() else {"app": app.title}
+
+@app.get("/checker")
+def checker_page():
+    return FileResponse(CHECKER_PAGE) if CHECKER_PAGE.exists() else {"app": app.title}
