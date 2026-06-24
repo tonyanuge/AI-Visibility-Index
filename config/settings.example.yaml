@@ -1,0 +1,8 @@
+app_name: "AI Visibility Index"
+audit_url: "https://buy.stripe.com/REPLACE_ME_AUDIT"
+monitoring_url: "https://buy.stripe.com/REPLACE_ME_MONITORING"
+audit_price_eur: 295
+engines:
+  openai:     { enabled: false, model: "gpt-4o" }
+  perplexity: { enabled: false, model: "sonar" }
+  gemini:     { enabled: false, model: "gemini-2.0-flash" }

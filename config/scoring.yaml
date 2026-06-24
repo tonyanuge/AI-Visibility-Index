@@ -1,0 +1,5 @@
+status_thresholds:
+  strong: 5
+  visible: 2
+non_visibility_archetypes:
+  - Vetting

@@ -1,0 +1,6 @@
+archetypes:
+  - { name: Discovery,  counts_to_share_of_voice: true }
+  - { name: Shortlist,  counts_to_share_of_voice: true }
+  - { name: Need-based, counts_to_share_of_voice: true }
+  - { name: Attribute,  counts_to_share_of_voice: true }
+  - { name: Vetting,    counts_to_share_of_voice: false }

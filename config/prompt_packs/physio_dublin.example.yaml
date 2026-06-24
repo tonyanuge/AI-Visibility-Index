@@ -1,0 +1,9 @@
+category: "Physiotherapists"
+area: "Dublin"
+engines: [ChatGPT, Gemini, Perplexity]
+prompts:
+  - { archetype: Discovery,  text: "Who are the best physiotherapists in Dublin?" }
+  - { archetype: Shortlist,  text: "Recommend the top 5 physio clinics in Dublin." }
+  - { archetype: Need-based, text: "I have lower back pain in Dublin — which physio should I see?" }
+  - { archetype: Attribute,  text: "Best physiotherapy clinic in Dublin for sports injuries." }
+  - { archetype: Vetting,    text: "Is [Business] a good physio clinic?" }

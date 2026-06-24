@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free AI Visibility Check</title>
+<style>
+  :root{--ink:#16202b;--muted:#5d6b7a;--line:#e4e9ee;--brand:#1f6f6b;--bad:#c0392b;--warn:#b8860b}
+  *{box-sizing:border-box} body{margin:0;font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial;color:var(--ink);background:#f6f8f9}
+  .wrap{max-width:640px;margin:0 auto;padding:32px 20px}
+  h1{font-size:26px;margin:0 0 6px} .sub{color:var(--muted);margin:0 0 24px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+  label{display:block;font-weight:600;font-size:13px;margin:12px 0 5px}
+  input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:15px}
+  button{margin-top:18px;width:100%;background:var(--brand);color:#fff;border:0;border-radius:9px;padding:13px;font-size:16px;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.6}
+  .verdict{font-weight:700;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
+  .invisible{color:var(--bad)} .beaten{color:var(--warn)} .strong{color:var(--brand)}
+  .pill{display:inline-block;background:#eef3f3;border-radius:999px;padding:3px 10px;margin:3px 4px 0 0;font-size:13px}
+  .muted{color:var(--muted);font-size:13px} .hide{display:none}
+  .cta{display:block;text-align:center;background:var(--brand);color:#fff;text-decoration:none;border-radius:9px;padding:13px;font-weight:600;margin-top:14px}
+</style></head>
+<body><div class="wrap">
+  <h1>Is AI recommending your business?</h1>
+  <p class="sub">We asked ChatGPT, Gemini and Perplexity the questions your customers ask. See — free — whether they recommend you, ignore you, or get you wrong.</p>
+
+  <div class="card" id="formCard">
+    <label>Market</label>
+    <select id="cell"></select>
+    <label>Your business name</label>
+    <input id="business" placeholder="e.g. Riverside Physio" autocomplete="off">
+    <button id="go">Show me my AI visibility — free</button>
+    <p class="muted" style="margin-top:12px">Based on what the AIs returned under controlled conditions on a dated snapshot. Results vary by location and session.</p>
+  </div>
+
+  <div class="card hide" id="resultCard"></div>
+
+  <div class="card hide" id="leadCard">
+    <strong>Get the full report</strong>
+    <p class="muted">Every question, the competitors ahead of you, and the fixes — sent to your inbox.</p>
+    <label>Email</label><input id="email" type="email" placeholder="you@business.ie">
+    <button id="send">Send my full report</button>
+    <p class="muted hide" id="leadDone">Thanks — we'll be in touch with your full report.</p>
+  </div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let LAST = null;
+async function loadCells(){
+  const r = await fetch('/api/index/cells'); const cells = await r.json();
+  const sel = $('#cell');
+  if(!cells.length){ sel.innerHTML = '<option>No markets mapped yet</option>'; return; }
+  sel.innerHTML = cells.map(c => `<option value="${c.category}|${c.area}">${c.category} — ${c.area}</option>`).join('');
+}
+$('#go').onclick = async () => {
+  const [category, area] = $('#cell').value.split('|');
+  const business = $('#business').value.trim();
+  if(!business) return;
+  $('#go').disabled = true;
+  const r = await fetch('/api/checker', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({business, category, area})});
+  const v = await r.json(); LAST = {v, category, area, business};
+  render(v); $('#go').disabled = false;
+};
+function render(v){
+  const rc = $('#resultCard'); rc.classList.remove('hide');
+  const cfg = v.config || {};
+  const price = cfg.audit_price_eur || '';
+  let html = '';
+  if(v.state === 'INVISIBLE'){
+    html = `<div class="verdict invisible">Invisible</div>
+      <p>The AI never recommended <b>${v.business}</b> in this market. It named these instead:</p>
+      <p>${(v.recommended_instead||[]).map(n=>`<span class="pill">${n}</span>`).join('') || '<span class="muted">—</span>'}</p>`;
+  } else if(v.state === 'VISIBLE_BEATEN'){
+    html = `<div class="verdict beaten">Recommended, but behind</div>
+      <p><b>${v.business}</b> is recommended, but ranked #${v.rank} with ${Math.round((v.share||0)*100)}% share of recommendations.</p>
+      <p>Ahead of you: ${(v.ahead_of_you||[]).map(n=>`<span class="pill">${n}</span>`).join('')}</p>`;
+  } else if(v.state === 'STRONG'){
+    html = `<div class="verdict strong">Top AI recommendation</div>
+      <p><b>${v.business}</b> is the top AI pick right now. Positions drift — defend it with monitoring.</p>
+      ${cfg.monitoring_url?`<a class="cta" href="${cfg.monitoring_url}">Set up monthly monitoring</a>`:''}`;
+    rc.innerHTML = html; $('#leadCard').classList.remove('hide'); return;
+  } else {
+    html = `<div class="verdict">Not mapped yet</div>
+      <p>We haven't mapped this market yet. Leave your email and we'll run your check.</p>`;
+  }
+  if(v.state==='INVISIBLE' || v.state==='VISIBLE_BEATEN'){
+    html += cfg.audit_url ? `<a class="cta" href="${cfg.audit_url}">Get the full audit${price?` — €${price}`:''}</a>` : '';
+  }
+  rc.innerHTML = html; $('#leadCard').classList.remove('hide');
+}
+$('#send').onclick = async () => {
+  if(!LAST) return; const email = $('#email').value.trim(); if(!email) return;
+  await fetch('/api/leads', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({business:LAST.business,email,category:LAST.category,area:LAST.area,verdict:LAST.v.state})});
+  $('#leadDone').classList.remove('hide'); $('#send').disabled = true;
+};
+loadCells();
+</script></body></html>
