@@ -1,6 +1,6 @@
-import csv, io
+import csv, io, hmac
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import StreamingResponse, FileResponse
 from .. import config
 from ..store import db
@@ -16,6 +16,15 @@ CHECKER_PAGE = WEB / "checker" / "index.html"
 
 def _conn():
     return db.connect()
+
+# Admin-only guard for lead export (emails are PII). Token comes from the environment;
+# the client sends it in the X-Admin-Export-Token header. Never exposed to the frontend.
+def _require_export_token(token: str | None):
+    server = config.env("AVIX_ADMIN_EXPORT_TOKEN")
+    if not server:  # fail closed: export stays disabled until an admin token is configured
+        raise HTTPException(503, "Lead export is disabled: no admin export token configured.")
+    if not token or not hmac.compare_digest(token, server):  # constant-time compare
+        raise HTTPException(403, "Invalid or missing admin export token.")
 
 @app.get("/health")
 def health():
@@ -54,7 +63,8 @@ def leads(req: LeadRequest):
                                     req.area, req.verdict)
 
 @app.get("/api/leads/export")
-def leads_export():
+def leads_export(x_admin_export_token: str | None = Header(default=None)):
+    _require_export_token(x_admin_export_token)
     with _conn() as c:
         rows = lead_service.export_rows(c)
     buf = io.StringIO()

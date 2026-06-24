@@ -73,6 +73,20 @@ def main():
     chk = client.get("/checker")
     check("GET /checker serves functional checker page", chk.status_code == 200 and "id=\"cell\"" in chk.text)
 
+    print("\n[6] Protected lead export (ISSUE-2)")
+    EXP, TOK = "/api/leads/export", "X-Admin-Export-Token"
+    os.environ.pop("AVIX_ADMIN_EXPORT_TOKEN", None)
+    check("export FAILS CLOSED when server token unset (503)", client.get(EXP).status_code == 503)
+    os.environ["AVIX_ADMIN_EXPORT_TOKEN"] = "smoke-secret-123"
+    check("export rejects MISSING token (403)", client.get(EXP).status_code == 403)
+    check("export rejects WRONG token (403)", client.get(EXP, headers={TOK: "nope"}).status_code == 403)
+    check("export rejects BLANK token (403)", client.get(EXP, headers={TOK: ""}).status_code == 403)
+    ok = client.get(EXP, headers={TOK: "smoke-secret-123"})
+    check("export SUCCEEDS with correct token (200)", ok.status_code == 200)
+    check("export returns CSV with expected header row",
+          ok.text.splitlines()[0] == "ts,business,email,category,area,verdict")
+    os.environ.pop("AVIX_ADMIN_EXPORT_TOKEN", None)  # restore fail-closed default
+
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")
     if FAIL:
