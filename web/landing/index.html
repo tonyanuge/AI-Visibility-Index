@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AI Visibility Index — is AI recommending your business?</title>
 <meta name="description" content="AI Mystery Shopping: see whether ChatGPT, Gemini and Perplexity recommend your local business — or name your competitors instead. A dated snapshot of what AI assistants return.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#142128; --ink-2:#26383f; --paper:#f4f7f7; --card:#ffffff;
@@ -26,6 +29,10 @@
   .topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
   .mark{font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:.02em}
   .mark b{color:var(--teal)} .mark .dot{color:var(--signal)}
+  .nav{display:flex;align-items:center;gap:16px}
+  .navlink{font-family:var(--display),system-ui,sans-serif;font-weight:600;font-size:14px;
+    text-decoration:none;color:var(--ink)}
+  .navlink:hover{color:var(--teal-d)}
   .navcta{font-family:var(--display),system-ui,sans-serif;font-weight:600;font-size:14px;
     text-decoration:none;background:var(--teal);color:#fff;padding:9px 16px;border-radius:9px}
   .navcta:hover{background:var(--teal-d)}
@@ -81,7 +88,10 @@
 
 <header class="topbar"><div class="wrap">
   <div class="mark"><b>AI</b> Visibility Index<span class="dot">.</span></div>
-  <a class="navcta" href="/checker">Free visibility check</a>
+  <nav class="nav">
+    <a class="navlink" href="/pricing">Pricing</a>
+    <a class="navcta" href="/checker">Free visibility check</a>
+  </nav>
 </div></header>
 
 <main>

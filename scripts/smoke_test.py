@@ -188,6 +188,23 @@ def main():
     check("real market: off-roster report refused (404)",
           client.get("/api/report", params={"business": "Not Captured Agency", "category": RC, "area": RA}).status_code == 404)
 
+    print("\n[11] Pricing page (/pricing)")
+    pg = client.get("/pricing")
+    pt = pg.text
+    check("GET /pricing serves the page (200)", pg.status_code == 200)
+    check("pricing shows both tiers (€0 + €149)", "€0" in pt and "€149" in pt)
+    check("both CTAs route to the free checker (>=2 /checker links)", pt.count('href="/checker"') >= 2)
+    check("pricing carries the no-guarantee boundary line", "No ranking is guaranteed" in pt)
+    check("pricing does NOT name Gemini (not captured yet)", "Gemini" not in pt)
+    check("pricing has no Stripe placeholder / admin-export / subscription tiers",
+          "REPLACE_ME" not in pt and "/api/leads/export" not in pt
+          and not any(w.lower() in pt.lower() for w in ["Enterprise", "per month", "/mo", "subscription"]))
+    check("pricing carries the TraceLogic footer", "product of TraceLogic Limited" in pt)
+    # required landing link to /pricing
+    check("GET / links to /pricing", 'href="/pricing"' in client.get("/").text)
+    # regression: checker stays uncluttered (no pricing block forced onto it)
+    check("/checker is not cluttered with pricing (no €149)", "€149" not in client.get("/checker").text)
+
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")
     if FAIL:
