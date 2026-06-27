@@ -1,0 +1,45 @@
+# Branding + presentation config for the client report generator (config-driven; no
+# company name, colours, or disclaimer text are hard-coded in builder.py).
+company: "TraceLogic Limited"
+product: "AI Visibility Index"
+font_family: "Arial"
+
+# Neutral palette (hex, no leading #).
+colors:
+  ink: "142128"
+  muted: "5D6F76"
+  line: "DCE5E6"
+  callout_bg: "EEF4F3"
+  cover_rule: "0E7C7B"
+
+# Verdict colour system — applied everywhere a verdict appears (cover + verdict table
+# + verdict key). Colour carries meaning consistently.
+verdict_colors:
+  INVISIBLE: "C0392B"          # red — absent
+  VISIBLE_BEATEN: "B8860B"     # amber — present but behind
+  STRONG: "0E7C7B"             # teal — top recommendation
+  WEAK_INCONSISTENT: "C0392B"  # red — weak overall
+  NOT_COVERED: "5D6F76"        # grey — market not mapped
+
+# Human-readable labels for the verdict key legend.
+verdict_labels:
+  INVISIBLE: "Invisible"
+  VISIBLE_BEATEN: "Visible but beaten"
+  STRONG: "Top recommendation"
+  WEAK_INCONSISTENT: "Weak / inconsistent"
+  NOT_COVERED: "Not covered"
+
+# Footer (rendered on every page). {client} is filled at render time. The page number
+# on the right is a real Word PAGE/NUMPAGES field, not static text.
+footer_confidential: "{company} · Confidential — prepared for {client}"
+
+# Dated-snapshot disclaimer, rendered verbatim. Protective wording is intentional and
+# MUST include the explicit "not a guarantee of future ranking" sentence.
+disclaimer: >-
+  This report is based on a manual AI visibility check using captured AI outputs at a
+  point in time. AI results can vary by date, model, location, browsing context, and
+  prompt wording. It reflects a manual pilot sample, not a full market-wide audit. This
+  is not a guarantee of future ranking and does not predict future results.
+
+# Private/internal line under the disclaimer.
+confidential_note: "Internal / manual evidence — not for public benchmark publication."
