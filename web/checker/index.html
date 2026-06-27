@@ -147,6 +147,23 @@ $('#go').onclick = async () => {
   const v = await r.json(); LAST = {v, category, area, business};
   render(v); $('#go').disabled = false;
 };
+// On-screen report block: mention stat + key findings (data-derived, from the backend) + a
+// download button for the branded .docx. Empty for unmapped markets (no stat/findings).
+function reportSection(v){
+  const r = v.report;
+  if(!r || (!r.stat && !(r.key_findings||[]).length)) return '';
+  let h = '';
+  if(r.stat) h += `<p class="muted" style="margin-top:14px">${r.stat}</p>`;
+  if((r.key_findings||[]).length){
+    h += `<p class="muted" style="margin:10px 0 4px"><b>What the data shows</b></p>
+      <ul class="muted" style="margin:0;padding:0 0 0 18px">${r.key_findings.map(f=>`<li>${f}</li>`).join('')}</ul>`;
+  }
+  if(LAST){
+    const q = new URLSearchParams({business:LAST.business, category:LAST.category, area:LAST.area}).toString();
+    h += `<a class="cta calm" download href="/api/report?${q}">Download report (.docx)</a>`;
+  }
+  return h;
+}
 function render(v){
   const rc = $('#resultCard'); rc.classList.remove('hide');
   const cfg = v.config || {};
@@ -167,7 +184,7 @@ function render(v){
       ${mon
         ? `<a class="cta calm" href="${mon}">Set up monthly monitoring</a>`
         : `<span class="cta soon" aria-disabled="true">Monthly monitoring — coming soon</span>`}`;
-    rc.innerHTML = html; $('#leadCard').classList.remove('hide'); return;
+    rc.innerHTML = html + reportSection(v); $('#leadCard').classList.remove('hide'); return;
   } else {
     html = `<div class="verdict">Not mapped yet</div>
       <p>We haven't mapped this market yet. Leave your email and we'll run your check.</p>`;
@@ -178,6 +195,7 @@ function render(v){
       ? `<a class="cta" href="${audit}">Get the full audit${price?` — €${price}`:''}</a>`
       : `<span class="cta soon" aria-disabled="true">Full audit checkout — coming soon</span>`;
   }
+  html += reportSection(v);
   rc.innerHTML = html; $('#leadCard').classList.remove('hide');
 }
 $('#send').onclick = async () => {

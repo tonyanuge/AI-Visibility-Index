@@ -119,9 +119,10 @@ def test_headline_stat_matches_structured_data():
     data = _data()
     doc = Document(io.BytesIO(_docx_bytes()))
     text = _all_text(doc)
-    # derived, so it always matches the tables (R7)
-    assert f"{data.mention_rate_pct}%" in text
-    assert f"of {data.total_checks} checks" in text
+    # derived, so it always matches the tables (R7) — recommendation-based framing (no "checks")
+    assert f"{data.mention_rate_pct}% share" in text
+    assert f"of {data.total_checks} captured AI recommendations" in text
+    assert "checks" not in text.lower() and "mention rate" not in text.lower()
     assert data.mention_rate_pct == 13 and data.total_checks == 15
 
 

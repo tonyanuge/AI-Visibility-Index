@@ -113,6 +113,27 @@ def main():
     check("hitting checker limit does NOT block /api/leads", lead_ok.status_code == 200)
     ratelimit.configure(None)  # restore file-backed limits
 
+    print("\n[8] Demo journey: Accountants — Dublin (search -> on-screen + downloadable report)")
+    from scripts.seed_accountants import seed as seed_acc, MARKET as ACC
+    seed_acc(conn)
+    ratelimit.reset()
+    acc_cat, acc_area = ACC
+    cells_now = client.get("/api/index/cells").json()
+    check("accountants market is mapped",
+          any(c["category"] == acc_cat and c["area"] == acc_area for c in cells_now))
+    rr = client.post("/api/checker", json={"business": "Liffey & Quay Accountants (DEMO)",
+                     "category": acc_cat, "area": acc_area}).json()
+    check("accountants search returns a real verdict (not NOT_COVERED)", rr["state"] != "NOT_COVERED")
+    check("checker carries on-screen report (stat + key findings)",
+          bool(rr.get("report", {}).get("stat")) and len(rr["report"]["key_findings"]) > 0)
+    dl = client.get("/api/report", params={"business": "Liffey & Quay Accountants (DEMO)",
+                    "category": acc_cat, "area": acc_area})
+    check("GET /api/report returns a downloadable .docx (200)",
+          dl.status_code == 200 and dl.content[:2] == b"PK")
+    check("report is a .docx attachment",
+          "attachment" in dl.headers.get("content-disposition", "")
+          and "wordprocessingml" in dl.headers.get("content-type", ""))
+
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")
     if FAIL:

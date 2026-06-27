@@ -29,7 +29,7 @@
   "executive_summary": [
     "We asked five AI assistants the kinds of questions a potential client might type when looking for an accountant in this area, and recorded whether they recommended Demo Accounting (SAMPLE) and, if so, where it ranked.",
     "In plain English: Demo Accounting (SAMPLE) does not appear strongly for broad city or tax-advice searches. It performs slightly better when the search is narrowed to its local suburb, but even there it is not consistently recommended across all assistants.",
-    "Across 15 captured checks, the business was recommended in only 2 (about 13%), and both were local-area searches where it ranked behind competitors. This is a first manual pilot sample, not a market-wide benchmark."
+    "Across 15 captured AI answers, the business was recommended in only 2 (about 13%), and both were local-area searches where it ranked behind competitors. This is a first manual pilot sample, not a market-wide benchmark."
   ],
   "what_we_tested_prompts": [
     "Best accountants in Demo City for small businesses",
@@ -49,11 +49,7 @@
     "The opportunity is to strengthen the signals that help AI assistants recommend the business more often, more broadly, and higher up."
   ],
   "recommended_actions": [
-    "Strengthen core service pages for small-business accounting, tax advisory, payroll, VAT, audit, and company formation.",
-    "Improve local and city location signals across the website and listings.",
-    "Add clear who-we-help pages for SMEs, owner-managed businesses, startups, and local companies.",
-    "Build stronger third-party directory and review signals.",
-    "Create comparison and list-style content that AI systems can parse.",
-    "Monitor the same prompts monthly to track movement over time."
+    "This report describes what AI assistants returned for this market on the snapshot date; it is a manual pilot sample, not a full market-wide audit.",
+    "Figures count captured AI recommendations, not separate searches, and reflect only the assistants and prompts listed above."
   ]
 }
