@@ -1,12 +1,14 @@
 import csv, io, hmac
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.responses import StreamingResponse, FileResponse
 from .. import config
 from ..store import db
 from ..service import index_service, checker_service, lead_service
+from ..audit import audit_log
 from ..ingest.runners.llm import available_runners
 from .schemas import CheckRequest, LeadRequest
+from .ratelimit import rate_limit
 
 settings = config.load_settings()
 app = FastAPI(title=settings.get("app_name", "AI Visibility Index"), version="0.1.0")
@@ -24,7 +26,9 @@ def _require_export_token(token: str | None):
     if not server:  # fail closed: export stays disabled until an admin token is configured
         raise HTTPException(503, "Lead export is disabled: no admin export token configured.")
     if not token or not hmac.compare_digest(token, server):  # constant-time compare
-        raise HTTPException(403, "Invalid or missing admin export token.")
+        # 401: the caller is unauthenticated (no/invalid credentials), not forbidden.
+        raise HTTPException(401, "Invalid or missing admin export token.",
+                            headers={"WWW-Authenticate": 'Token realm="lead-export"'})
 
 @app.get("/health")
 def health():
@@ -47,7 +51,7 @@ def index_cell(category: str, area: str):
             "summary": cell.summary,
             "scores": [vars(s) for s in cell.scores]}
 
-@app.post("/api/checker")
+@app.post("/api/checker", dependencies=[Depends(rate_limit("checker"))])
 def checker(req: CheckRequest):
     with _conn() as c:
         v = checker_service.check(c, req.business, req.category, req.area)
@@ -56,17 +60,19 @@ def checker(req: CheckRequest):
                    "audit_price_eur": settings.get("audit_price_eur")}
     return v
 
-@app.post("/api/leads")
+@app.post("/api/leads", dependencies=[Depends(rate_limit("leads"))])
 def leads(req: LeadRequest):
     with _conn() as c:
         return lead_service.capture(c, req.business, req.email, req.category,
                                     req.area, req.verdict)
 
-@app.get("/api/leads/export")
+@app.get("/api/leads/export", dependencies=[Depends(rate_limit("export"))])
 def leads_export(x_admin_export_token: str | None = Header(default=None)):
     _require_export_token(x_admin_export_token)
     with _conn() as c:
         rows = lead_service.export_rows(c)
+        # content-free audit on SUCCESS only (200) — event + non-PII ref, never token or IP
+        audit_log.record(c, "export.accessed", "leads")
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["ts", "business", "email", "category", "area", "verdict"])

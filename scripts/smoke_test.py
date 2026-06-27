@@ -73,19 +73,45 @@ def main():
     chk = client.get("/checker")
     check("GET /checker serves functional checker page", chk.status_code == 200 and "id=\"cell\"" in chk.text)
 
-    print("\n[6] Protected lead export (ISSUE-2)")
+    print("\n[6] Protected lead export (ISSUE-2 + auth status correction)")
+    from avix.api import ratelimit
+    ratelimit.reset()  # fresh window so the auth matrix isn't throttled
     EXP, TOK = "/api/leads/export", "X-Admin-Export-Token"
     os.environ.pop("AVIX_ADMIN_EXPORT_TOKEN", None)
     check("export FAILS CLOSED when server token unset (503)", client.get(EXP).status_code == 503)
     os.environ["AVIX_ADMIN_EXPORT_TOKEN"] = "smoke-secret-123"
-    check("export rejects MISSING token (403)", client.get(EXP).status_code == 403)
-    check("export rejects WRONG token (403)", client.get(EXP, headers={TOK: "nope"}).status_code == 403)
-    check("export rejects BLANK token (403)", client.get(EXP, headers={TOK: ""}).status_code == 403)
+    miss = client.get(EXP)
+    check("export rejects MISSING token (401)", miss.status_code == 401)
+    check("export 401 carries WWW-Authenticate header",
+          "www-authenticate" in {k.lower() for k in miss.headers})
+    check("export rejects WRONG token (401)", client.get(EXP, headers={TOK: "nope"}).status_code == 401)
+    check("export rejects BLANK token (401)", client.get(EXP, headers={TOK: ""}).status_code == 401)
     ok = client.get(EXP, headers={TOK: "smoke-secret-123"})
     check("export SUCCEEDS with correct token (200)", ok.status_code == 200)
     check("export returns CSV with expected header row",
           ok.text.splitlines()[0] == "ts,business,email,category,area,verdict")
+    check("content-free audit logged export.accessed (event only, no token/IP)",
+          any(e["event"] == "export.accessed" for e in audit_log.entries(conn)))
     os.environ.pop("AVIX_ADMIN_EXPORT_TOKEN", None)  # restore fail-closed default
+
+    print("\n[7] Rate limiting (ISSUE-A)")
+    # inject a tiny, known limit so the trigger point is deterministic (proves config-driven)
+    ratelimit.configure({"trust_forwarded_for": False, "limits": {
+        "checker": {"limit": 2, "window_seconds": 60},
+        "leads":   {"limit": 10, "window_seconds": 60}}})
+    body = {"business": "RateTest", "category": "Physiotherapists", "area": "Dublin"}
+    s1 = client.post("/api/checker", json=body).status_code
+    s2 = client.post("/api/checker", json=body).status_code
+    blocked = client.post("/api/checker", json=body)
+    check("under-threshold checker requests still succeed", s1 == 200 and s2 == 200)
+    check("over-threshold checker request -> 429", blocked.status_code == 429)
+    check("429 carries Retry-After header",
+          "retry-after" in {k.lower() for k in blocked.headers})
+    # per-route independence: leads (limit 10) is unaffected by the checker limit being hit
+    lead_ok = client.post("/api/leads", json={"business": "X", "email": "ok@b.ie",
+              "category": "Physiotherapists", "area": "Dublin", "verdict": "INVISIBLE"})
+    check("hitting checker limit does NOT block /api/leads", lead_ok.status_code == 200)
+    ratelimit.configure(None)  # restore file-backed limits
 
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")
