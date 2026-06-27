@@ -75,6 +75,17 @@
   .provbar{background:#eef4f3;color:var(--ink-2);font-size:12.5px;border:1px solid var(--line);
     border-radius:9px;padding:9px 13px;margin-bottom:14px}
   .notsample{font-size:15px;color:var(--ink-2)}
+  /* standing-first result + collapsed competitor reveal */
+  .standing{font-size:16px;color:var(--ink);margin:8px 0 0}
+  .reveal{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .reveal summary{font-family:var(--display),system-ui,sans-serif;font-weight:600;font-size:14px;
+    color:var(--teal-d);cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:7px}
+  .reveal summary::-webkit-details-marker{display:none}
+  .reveal summary::before{content:"▸";color:var(--teal);font-size:12px}
+  .reveal[open] summary::before{content:"▾"}
+  .reveal summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+  .reveal.strong summary{color:#fff;background:var(--signal);padding:11px 15px;border-radius:9px;font-size:15px}
+  .reveal.strong summary::before{color:#fff}
   /* footer — matches landing */
   footer{padding:32px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px;margin-top:8px}
   footer .wrap{max-width:1040px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
@@ -194,22 +205,54 @@ $('#go').onclick = async () => {
   const v = await r.json(); LAST = {v, category, area, business};
   render(v); $('#go').disabled = false;
 };
-// On-screen report block: mention stat + key findings (data-derived, from the backend) + a
-// download button for the branded .docx. Empty for unmapped markets (no stat/findings).
-function reportSection(v){
-  const r = v.report;
-  if(!r || (!r.stat && !(r.key_findings||[]).length)) return '';
+// Standing-first result: lead with the user's OWN standing (complete and true on its own);
+// competitors are collapsed behind an explicit reveal. The same JSON is reordered, not refetched.
+function standingLine(v){
+  if(v.state==='STRONG')         return `<b>${v.business}</b> is the top AI recommendation in this market right now.`;
+  if(v.state==='VISIBLE_BEATEN') return `<b>${v.business}</b> is recommended, but ranked #${v.rank}.`;
+  if(v.state==='INVISIBLE')      return `AI never recommended <b>${v.business}</b> in this market — it named other firms instead.`;
+  return '';
+}
+// Secondary supporting text (the market stat) + data-derived findings, with any competitor-naming
+// line removed — those names appear ONLY inside the reveal.
+function standingDetail(v){
+  const r = v.report || {};
   let h = '';
-  if(r.stat) h += `<p class="muted" style="margin-top:14px">${r.stat}</p>`;
-  if((r.key_findings||[]).length){
+  if(r.stat) h += `<p class="muted" style="margin-top:10px">${r.stat}</p>`;
+  const findings = (r.key_findings||[]).filter(f => !/^AI recommended instead:|^Recommended ahead of it:/.test(f));
+  if(findings.length){
     h += `<p class="muted" style="margin:10px 0 4px"><b>What the data shows</b></p>
-      <ul class="muted" style="margin:0;padding:0 0 0 18px">${r.key_findings.map(f=>`<li>${f}</li>`).join('')}</ul>`;
-  }
-  if(LAST){
-    const q = new URLSearchParams({business:LAST.business, category:LAST.category, area:LAST.area}).toString();
-    h += `<a class="cta calm" download href="/api/report?${q}">Download report (.docx)</a>`;
+      <ul class="muted" style="margin:0;padding:0 0 0 18px">${findings.map(f=>`<li>${f}</li>`).join('')}</ul>`;
   }
   return h;
+}
+// Competitors collapsed by default for every state, framed honestly as "Other firms the AI
+// recommended" — no adversarial ranking language. INVISIBLE gets a stronger, more prominent prompt.
+function competitorReveal(v){
+  const firms = (v.recommended_instead && v.recommended_instead.length) ? v.recommended_instead : (v.ahead_of_you || []);
+  if(!firms.length) return '';
+  const invisible = v.state==='INVISIBLE';
+  const prompt = invisible ? 'See which firms AI is recommending in your place'
+                           : 'See the other firms the AI recommended';
+  return `<details class="reveal${invisible?' strong':''}">
+      <summary>${prompt}</summary>
+      <p class="muted" style="margin:10px 0 0">Other firms the AI recommended: ${firms.map(n=>`<span class="pill">${n}</span>`).join('')}</p>
+    </details>`;
+}
+function stateCtas(v, cfg, price){
+  if(v.state==='STRONG'){
+    const mon = liveCheckoutUrl(cfg.monitoring_url);
+    return mon ? `<a class="cta calm" href="${mon}">Set up monthly monitoring</a>`
+               : `<span class="cta soon" aria-disabled="true">Monthly monitoring — coming soon</span>`;
+  }
+  const audit = liveCheckoutUrl(cfg.audit_url);
+  return audit ? `<a class="cta" href="${audit}">Get the full audit${price?` — €${price}`:''}</a>`
+               : `<span class="cta soon" aria-disabled="true">Full audit checkout — coming soon</span>`;
+}
+function downloadButton(){
+  if(!LAST) return '';
+  const q = new URLSearchParams({business:LAST.business, category:LAST.category, area:LAST.area}).toString();
+  return `<a class="cta calm" download href="/api/report?${q}">Download report (.docx)</a>`;
 }
 function render(v){
   const rc = $('#resultCard'); rc.classList.remove('hide');
@@ -231,35 +274,26 @@ function render(v){
     // Lead moment: offer a real check. Measurement-free — no verdict/competitor language.
     rc.innerHTML = h; showLead('realcheck'); return;
   }
-  let html = '';
-  if(v.state === 'INVISIBLE'){
-    html = `<div class="verdict invisible">Invisible</div>
-      <p>The AI never recommended <b>${v.business}</b> in this market. It named these instead:</p>
-      <p>${(v.recommended_instead||[]).map(n=>`<span class="pill">${n}</span>`).join('') || '<span class="muted">—</span>'}</p>`;
-  } else if(v.state === 'VISIBLE_BEATEN'){
-    html = `<div class="verdict beaten">Recommended, but behind</div>
-      <p><b>${v.business}</b> is recommended, but ranked #${v.rank} with ${Math.round((v.share||0)*100)}% share of recommendations.</p>
-      <p>Ahead of you: ${(v.ahead_of_you||[]).map(n=>`<span class="pill">${n}</span>`).join('')}</p>`;
-  } else if(v.state === 'STRONG'){
-    const mon = liveCheckoutUrl(cfg.monitoring_url);
-    html = `<div class="verdict strong">Top AI recommendation</div>
-      <p><b>${v.business}</b> is the top AI pick right now. Positions drift — defend it with monitoring.</p>
-      ${mon
-        ? `<a class="cta calm" href="${mon}">Set up monthly monitoring</a>`
-        : `<span class="cta soon" aria-disabled="true">Monthly monitoring — coming soon</span>`}`;
-    rc.innerHTML = topnote + html + reportSection(v); showLead('report'); return;
-  } else {
-    html = `<div class="verdict">Not mapped yet</div>
-      <p>We haven't mapped this market yet. Leave your email and we'll run your check.</p>`;
+  const verdictHead = {
+    INVISIBLE: '<div class="verdict invisible">Invisible</div>',
+    VISIBLE_BEATEN: '<div class="verdict beaten">Recommended, but behind</div>',
+    STRONG: '<div class="verdict strong">Top AI recommendation</div>',
+  }[v.state];
+  if(verdictHead){
+    // STANDING-FIRST: the user's own standing leads and is complete without the reveal;
+    // competitors (data identical to before) are collapsed below behind an explicit control.
+    const html = verdictHead
+      + `<p class="standing">${standingLine(v)}</p>`
+      + standingDetail(v)
+      + competitorReveal(v)
+      + stateCtas(v, cfg, price)
+      + downloadButton();
+    rc.innerHTML = topnote + html; showLead('report'); return;
   }
-  if(v.state==='INVISIBLE' || v.state==='VISIBLE_BEATEN'){
-    const audit = liveCheckoutUrl(cfg.audit_url);
-    html += audit
-      ? `<a class="cta" href="${audit}">Get the full audit${price?` — €${price}`:''}</a>`
-      : `<span class="cta soon" aria-disabled="true">Full audit checkout — coming soon</span>`;
-  }
-  html += reportSection(v);
-  rc.innerHTML = topnote + html; showLead('report');
+  // NOT_COVERED — market not mapped yet (unchanged)
+  rc.innerHTML = topnote + `<div class="verdict">Not mapped yet</div>
+    <p>We haven't mapped this market yet. Leave your email and we'll run your check.</p>`;
+  showLead('report');
 }
 $('#send').onclick = async () => {
   if(!LAST) return;

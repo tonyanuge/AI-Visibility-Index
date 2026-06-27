@@ -205,6 +205,24 @@ def main():
     # regression: checker stays uncluttered (no pricing block forced onto it)
     check("/checker is not cluttered with pricing (no €149)", "€149" not in client.get("/checker").text)
 
+    print("\n[12] Standing-first result (presentation only — assert served /checker source)")
+    ck = client.get("/checker").text
+    check("competitors collapsed behind a <details> reveal", '<details class="reveal' in ck)
+    check("competitors collapsed by DEFAULT (no <details open>)", "<details open" not in ck)
+    check("standing-first leads with the user's state (standing lines present)",
+          "it named other firms instead" in ck and "is the top AI recommendation in this market" in ck)
+    check("INVISIBLE has the stronger reveal prompt (…in your place)", "in your place" in ck)
+    check("honest competitor framing present", "Other firms the AI recommended" in ck)
+    check("BANNED framing absent (no 'beat you' / 'ranked above you')",
+          "beat you" not in ck.lower() and "ranked above you" not in ck.lower())
+    check("C3 framing intact (NOT_IN_SAMPLE 'Firms we have captured' unchanged)", "Firms we have captured" in ck)
+    check("demo SAMPLE strip class intact", "samplebar" in ck)
+    # API JSON UNCHANGED: a demo INVISIBLE still carries recommended_instead (only UI default changed)
+    inv2 = client.post("/api/checker", json={"business": "Northside Accounting Co (DEMO)",
+                       "category": acc_cat, "area": acc_area}).json()
+    check("/api/checker JSON unchanged: INVISIBLE still returns recommended_instead",
+          inv2["state"] == "INVISIBLE" and len(inv2.get("recommended_instead", [])) > 0)
+
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")
     if FAIL:
