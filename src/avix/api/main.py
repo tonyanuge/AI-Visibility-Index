@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.responses import StreamingResponse, FileResponse, Response
 from .. import config
 from ..store import db
-from ..service import index_service, checker_service, lead_service, report_service
+from ..service import index_service, checker_service, lead_service, report_service, sample_guard
 from ..audit import audit_log
 from ..ingest.runners.llm import available_runners
 from .schemas import CheckRequest, LeadRequest
@@ -57,8 +57,10 @@ def index_cell(category: str, area: str):
 def checker(req: CheckRequest):
     with _conn() as c:
         v = checker_service.check(c, req.business, req.category, req.area)
-        # on-screen report payload (mention stat + key findings + competitors), reusing scoring
-        v["report"] = report_service.on_screen(c, req.business, req.category, req.area, v)
+        # on-screen report payload only for real verdicts — never for a refused (NOT_IN_SAMPLE)
+        # name, so a real business gets no fabricated stat/findings.
+        if v.get("state") != "NOT_IN_SAMPLE":
+            v["report"] = report_service.on_screen(c, req.business, req.category, req.area, v)
     v["config"] = {"audit_url": settings.get("audit_url"),
                    "monitoring_url": settings.get("monitoring_url"),
                    "audit_price_eur": settings.get("audit_price_eur")}
@@ -96,6 +98,15 @@ def report_download(business: str, category: str, area: str):
     safe = re.sub(r"[^A-Za-z0-9]+", "_", business).strip("_") or "report"
     return Response(content=blob, media_type=_DOCX_MIME,
         headers={"Content-Disposition": f'attachment; filename="{safe}_AI_Visibility_Check.docx"'})
+
+@app.get("/api/sample/roster", dependencies=[Depends(rate_limit("checker"))])
+def sample_roster(category: str, area: str):
+    """Layer 2 source: roster (example DEMO firm) names for a guarded market, so the UI can
+    restrict the business field to sample firms. Empty + sample=false for real markets."""
+    with _conn() as c:
+        guarded = sample_guard.is_guarded(c, category, area)
+        names = sample_guard.roster_names(c, category, area) if guarded else []
+    return {"sample": guarded, "businesses": sorted(names)}
 
 @app.get("/")
 def home():

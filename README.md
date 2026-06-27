@@ -95,6 +95,18 @@ in-memory, never written to a repo path; rate-limited per IP). The auto-report s
 the captured data shows — no tailored advice or predictions — and carries the same dated-snapshot
 disclaimer. Demo data is synthetic and **not** a publishable Index.
 
+### Sample-data guardrail (defamation safety)
+Because the demo holds synthetic data, the checker must never make a claim about a **real**
+business. A cell is treated as **SAMPLE** unless it is provably all-real (every mention has a
+known non-demo source; configured in `config/demo.yaml`) — uncertainty **fails toward guarded**.
+In a guarded cell, only the seeded **roster** (example `(DEMO)`) names get a verdict; any other
+name returns a neutral *"Not in this sample"* note — **never** a fabricated Invisible/Beaten/Strong
+verdict, and it names no competitors. This is enforced **server-side** in the checker/report
+services (a direct `/api/checker` or `/api/report` call with a real name is refused too — the
+report 404s, never a `.docx`). The business field is restricted to sample firms via
+`GET /api/sample/roster`, and every seeded result + the downloaded `.docx` carry an unmissable
+**"SAMPLE DATA — illustrative only, not a real measurement"** strip.
+
 ## Architecture (UI never bypasses the backend)
 ```
 web/ (checker page)  ->  api/ (FastAPI)  ->  service/  ->  core/ (scoring) + store/ (sqlite)

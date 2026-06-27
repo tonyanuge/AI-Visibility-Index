@@ -11,7 +11,7 @@ from datetime import date
 from ..core import index
 from ..store import repository as repo
 from ..report import ReportData, CompetitorCount, SampleRow, build_report, load_branding
-from . import index_service
+from . import index_service, sample_guard
 
 # Fixed, generic, non-tailored line for the auto-report's recommended-actions slot.
 _AUTO_ACTIONS = ["This automated summary states what the captured data shows; "
@@ -67,11 +67,15 @@ def on_screen(conn, business, category, area, verdict: dict, cell=None) -> dict:
     if cell is None:
         return {"stat": "", "key_findings": [], "competitors": []}
     competitors = verdict.get("recommended_instead") or verdict.get("ahead_of_you") or []
-    return {
+    payload = {
         "stat": _mention_stat(cell, verdict),
         "key_findings": _key_findings(cell, verdict),
         "competitors": competitors,
     }
+    if sample_guard.is_guarded(conn, category, area):
+        payload["sample"] = True
+        payload["sample_banner"] = sample_guard.banner()
+    return payload
 
 
 def _competitor_counts(mentions, cell, business) -> list:
@@ -105,6 +109,11 @@ def report_data(conn, business, category, area) -> ReportData | None:
     """Map the scored cell + verdict into a ReportData (None if the market isn't mapped)."""
     cell = index_service.get_cell(conn, category, area)
     if cell is None:
+        return None
+    # Layer 1: never generate a report for an out-of-roster name in a guarded (demo) cell —
+    # a real business must not receive a fabricated report. Returning None -> the API 404s.
+    guarded = sample_guard.is_guarded(conn, category, area)
+    if guarded and not sample_guard.in_roster(conn, category, area, business):
         return None
     verdict = index.verdict_for(cell, business)
     mentions = repo.mentions_for_cell(conn, category, area)
@@ -143,6 +152,7 @@ def report_data(conn, business, category, area) -> ReportData | None:
         key_findings=_key_findings(cell, verdict),
         what_this_means=what_this_means,
         recommended_actions=_AUTO_ACTIONS,
+        sample_banner=sample_guard.banner() if guarded else "",
     )
 
 
