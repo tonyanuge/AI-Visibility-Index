@@ -110,6 +110,26 @@ off-roster name returns the neutral note **and** offers a real check (reuses `/a
 Every seeded result + the downloaded `.docx` carry an unmissable
 **"SAMPLE DATA — illustrative only, not a real measurement"** strip.
 
+### Real captured markets (roster-restriction vs sample-banner are separate)
+The two guardrail behaviours are split so a **real** captured market works honestly:
+- **Roster restriction** applies to **all** mapped markets (real + demo): only firms in the
+  cell roster get a verdict; an off-roster name returns an honest *"We haven't captured … in
+  this dataset yet"* note (no verdict, no competitors) and the report 404s.
+- The **SAMPLE banner** is **demo-only**. A real market (every mention has a non-demo `source`)
+  instead shows a **dated-snapshot provenance note** (engines / date / run-count derived from the
+  data, via `config/demo.yaml`), keeping the "no ranking is guaranteed" boundary.
+
+Load a real market from gitignored CSVs (never committed):
+```bash
+# data/imports/{captures.csv, roster.csv, aliases.csv}  — all gitignored
+PYTHONPATH=src python scripts/seed_dublin6.py
+```
+`captures.csv` rows are normalised to canonical roster names via `aliases.csv` (variant →
+canonical) **before** scoring — fail-safe: uncertain variants are left separate, never merged on a
+guess; an `__EXCLUDE__` canonical drops non-agencies (e.g. directories). The script prints a
+verification summary (rows, distinct firms/prompts/engines, top firm, zero-mention roster count) to
+eyeball before trusting the market. No real firm names or verdicts are committed to the repo.
+
 ## Architecture (UI never bypasses the backend)
 ```
 web/ (checker page)  ->  api/ (FastAPI)  ->  service/  ->  core/ (scoring) + store/ (sqlite)

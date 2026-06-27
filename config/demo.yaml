@@ -9,3 +9,9 @@
 demo_sources: ["Demo"]
 sample_banner: "SAMPLE DATA — illustrative only, not a real measurement."
 not_in_sample_message: "Not in this sample — this demo covers a fixed set of example firms."
+
+# REAL (non-demo) markets: no SAMPLE banner. Instead a dated-snapshot provenance note
+# ({runs}/{engines}/{date} filled from the captured data), and an honest no-data note for a
+# name we did not capture (roster restriction still applies to real markets too).
+provenance_note: "Dated snapshot — {runs} queries across {engines} on {date}. Answers vary by date, engine, location and session."
+not_in_dataset_message: "We haven't captured {business} in this dataset yet."

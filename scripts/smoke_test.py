@@ -163,6 +163,31 @@ def main():
            "category": acc_cat, "area": acc_area, "verdict": "NOT_IN_SAMPLE"})
     check("NOT_IN_SAMPLE lead captured via existing /api/leads (200)", lead.status_code == 200)
 
+    print("\n[10] Real market split (roster-restriction all markets; provenance not SAMPLE banner)")
+    from avix.core.models import Mention
+    from avix.store import repository as repo
+    RC, RA = "Estate Agents", "Smoke Town"
+    for b, eng in [("Alpha Realty (LISTED)", "ChatGPT"), ("Alpha Realty (LISTED)", "Perplexity"),
+                   ("Alpha Realty (LISTED)", "ChatGPT"), ("Alpha Realty (LISTED)", "Perplexity"),
+                   ("Alpha Realty (LISTED)", "ChatGPT"), ("Beta Homes (LISTED)", "ChatGPT")]:
+        repo.add_mention(conn, Mention(business=b, category=RC, area=RA, engine=eng, archetype="Discovery",
+            rank=1, source="Manual", prompt_text="best estate agents smoke town", date="2026-06-27"))
+        repo.add_business(conn, b, RC, RA)
+    repo.add_business(conn, "Gamma Property (LISTED)", RC, RA)   # roster, 0 mentions
+    ratelimit.reset()
+    rv = client.post("/api/checker", json={"business": "Alpha Realty (LISTED)", "category": RC, "area": RA}).json()
+    check("real market: listed firm gets a verdict, NOT sample-bannered",
+          rv["state"] in ("STRONG", "VISIBLE_BEATEN", "INVISIBLE") and not rv.get("sample"))
+    check("real market: verdict carries dated-snapshot provenance", bool(rv.get("provenance")))
+    inv = client.post("/api/checker", json={"business": "Gamma Property (LISTED)", "category": RC, "area": RA}).json()
+    check("real market: 0-mention roster firm -> INVISIBLE (real)", inv["state"] == "INVISIBLE" and not inv.get("sample"))
+    off = client.post("/api/checker", json={"business": "Not Captured Agency", "category": RC, "area": RA}).json()
+    check("real market: off-roster -> honest no-data (no verdict, no SAMPLE banner, no competitors)",
+          off["state"] == "NOT_IN_SAMPLE" and off.get("sample") is False
+          and "recommended_instead" not in off and "report" not in off)
+    check("real market: off-roster report refused (404)",
+          client.get("/api/report", params={"business": "Not Captured Agency", "category": RC, "area": RA}).status_code == 404)
+
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")
     if FAIL:
