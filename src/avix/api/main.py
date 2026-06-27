@@ -17,6 +17,7 @@ app = FastAPI(title=settings.get("app_name", "AI Visibility Index"), version="0.
 WEB = config.ROOT / "web"
 LANDING_PAGE = WEB / "landing" / "index.html"
 CHECKER_PAGE = WEB / "checker" / "index.html"
+PRICING_PAGE = WEB / "pricing" / "index.html"
 
 def _conn():
     return db.connect()
@@ -115,3 +116,7 @@ def home():
 @app.get("/checker")
 def checker_page():
     return FileResponse(CHECKER_PAGE) if CHECKER_PAGE.exists() else {"app": app.title}
+
+@app.get("/pricing")
+def pricing_page():
+    return FileResponse(PRICING_PAGE) if PRICING_PAGE.exists() else {"app": app.title}
