@@ -54,6 +54,20 @@ python scripts/import_tracker.py /path/to/ai_mystery_shopping_tracker.xlsx
 # or a CSV with the Run Log columns
 ```
 
+## API protection (rate limits + admin export auth)
+The public API routes are rate-limited **per client IP**, config-driven via
+`config/ratelimit.yaml` (`checker` 30/min, `leads` 10/min, `export` 5/min — tightest, as
+it's the brute-force target). Over-limit requests get **429** with a `Retry-After` header.
+The limiter is in-process (stdlib only) — **single-instance and resets on restart**; a
+shared store for multi-instance is a future gate. `X-Forwarded-For` is **not** trusted by
+default (set `trust_forwarded_for: true` only behind a trusted proxy).
+
+`/api/leads/export` auth status codes: **503** when `AVIX_ADMIN_EXPORT_TOKEN` is unset
+(fail-closed), **401** + `WWW-Authenticate: Token realm="lead-export"` for missing/blank/
+wrong token, **200 + CSV** with the correct token. A successful export records a
+content-free `export.accessed` audit event (event + non-PII reference only — never the
+token, email, or client IP).
+
 ## Branded client report (.docx)
 Render a consistent, branded **AI Visibility Check** report from a structured JSON input.
 The generator is a *renderer*: the analyst supplies the narrative + evidence; the

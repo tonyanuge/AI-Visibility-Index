@@ -1,0 +1,12 @@
+# Per-client (per-IP) rate limits for the public API routes. Limits are DATA, not code.
+#
+# In-process, single-instance counter: state lives in one process and RESETS ON RESTART.
+# It is NOT shared across instances — a distributed/shared store is a future gate. Behind a
+# proxy, all clients can share one source IP, so keep trust_forwarded_for=false until a
+# trusted proxy is configured (proxy/Lovable deploy gate).
+trust_forwarded_for: false
+
+limits:
+  checker: { limit: 30, window_seconds: 60 }   # public read of verdicts
+  leads:   { limit: 10, window_seconds: 60 }   # public lead capture
+  export:  { limit: 5,  window_seconds: 60 }   # tightest — admin export is the brute-force target
