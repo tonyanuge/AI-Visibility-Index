@@ -217,6 +217,11 @@ def main():
           "beat you" not in ck.lower() and "ranked above you" not in ck.lower())
     check("C3 framing intact (NOT_IN_SAMPLE 'Firms we have captured' unchanged)", "Firms we have captured" in ck)
     check("demo SAMPLE strip class intact", "samplebar" in ck)
+    # LAZY reveal: names are injected on open, not baked into the reveal markup.
+    check("reveal panel ships empty (data-reveal-pills injection target present)", "data-reveal-pills" in ck)
+    check("names injected on first OPEN via toggle handler", "addEventListener('toggle'" in ck)
+    check("no eager competitor interpolation in the reveal markup",
+          "Other firms the AI recommended: ${firms.map" not in ck)
     # API JSON UNCHANGED: a demo INVISIBLE still carries recommended_instead (only UI default changed)
     inv2 = client.post("/api/checker", json={"business": "Northside Accounting Co (DEMO)",
                        "category": acc_cat, "area": acc_area}).json()
