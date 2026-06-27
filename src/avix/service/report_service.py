@@ -72,9 +72,11 @@ def on_screen(conn, business, category, area, verdict: dict, cell=None) -> dict:
         "key_findings": _key_findings(cell, verdict),
         "competitors": competitors,
     }
-    if sample_guard.is_guarded(conn, category, area):
+    if sample_guard.is_guarded(conn, category, area):       # DEMO -> SAMPLE banner
         payload["sample"] = True
         payload["sample_banner"] = sample_guard.banner()
+    elif sample_guard.is_mapped(conn, category, area):      # REAL -> provenance note
+        payload["provenance"] = sample_guard.provenance(conn, category, area)
     return payload
 
 
@@ -110,10 +112,10 @@ def report_data(conn, business, category, area) -> ReportData | None:
     cell = index_service.get_cell(conn, category, area)
     if cell is None:
         return None
-    # Layer 1: never generate a report for an out-of-roster name in a guarded (demo) cell —
-    # a real business must not receive a fabricated report. Returning None -> the API 404s.
-    guarded = sample_guard.is_guarded(conn, category, area)
-    if guarded and not sample_guard.in_roster(conn, category, area, business):
+    # Roster restriction (all mapped markets): never generate a report for an out-of-roster name —
+    # a firm we didn't capture must not receive a fabricated report. Returning None -> the API 404s.
+    demo = sample_guard.is_guarded(conn, category, area)
+    if not sample_guard.in_roster(conn, category, area, business):
         return None
     verdict = index.verdict_for(cell, business)
     mentions = repo.mentions_for_cell(conn, category, area)
@@ -126,15 +128,18 @@ def report_data(conn, business, category, area) -> ReportData | None:
     beaten = sum(1 for sc in cell.scores if sc.total_mentions > 0 and sc.status != "Strong")
 
     branding = load_branding()
+    data_kind = "demo data" if demo else "data"
     exec_summary = [
         f'This automated summary reports what AI assistants returned for "{business}" in '
-        f'{category} — {area}, from the captured demo data on {snapshot}.',
+        f'{category} — {area}, from the captured {data_kind} on {snapshot}.',
         _mention_stat(cell, verdict) or "This market has captured AI recommendation data.",
     ]
     what_this_means = [
         "These figures describe what the captured AI answers showed for this market on the "
         "snapshot date. AI answers vary by date, model, location, browsing context, and prompt wording.",
     ]
+    if not demo:   # REAL market: lead with the dated-snapshot provenance note
+        what_this_means.insert(0, sample_guard.provenance(conn, category, area))
     return ReportData(
         client=business, market=category, area=area, snapshot_date=snapshot,
         prepared_by=branding.get("company", ""),
@@ -152,7 +157,7 @@ def report_data(conn, business, category, area) -> ReportData | None:
         key_findings=_key_findings(cell, verdict),
         what_this_means=what_this_means,
         recommended_actions=_AUTO_ACTIONS,
-        sample_banner=sample_guard.banner() if guarded else "",
+        sample_banner=sample_guard.banner() if demo else "",   # SAMPLE strip on demo reports only
     )
 
 

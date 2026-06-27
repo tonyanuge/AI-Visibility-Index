@@ -65,9 +65,12 @@
   .cta.soon{background:#eef4f3;color:var(--muted);border:1px solid var(--line);cursor:default}
   .ok{color:var(--teal-d);font-size:14px;margin-top:10px}
   .err{color:var(--signal);font-size:14px;margin-top:10px;font-weight:500}
-  /* unmissable sample-data strip */
+  /* unmissable sample-data strip (demo) */
   .samplebar{background:var(--signal);color:#fff;font-weight:700;font-size:13px;letter-spacing:.02em;
     border-radius:9px;padding:10px 14px;margin-bottom:14px}
+  /* neutral provenance note (real markets) */
+  .provbar{background:#eef4f3;color:var(--ink-2);font-size:12.5px;border:1px solid var(--line);
+    border-radius:9px;padding:9px 13px;margin-bottom:14px}
   .notsample{font-size:15px;color:var(--ink-2)}
   /* footer — matches landing */
   footer{padding:32px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px;margin-top:8px}
@@ -209,14 +212,18 @@ function render(v){
   const rc = $('#resultCard'); rc.classList.remove('hide');
   const cfg = v.config || {};
   const price = cfg.audit_price_eur || '';
-  // Layer 3: unmissable SAMPLE strip on every seeded result.
+  // Top note: SAMPLE strip on demo results; neutral provenance note on real results.
   const banner = v.sample ? `<div class="samplebar">${v.sample_banner || 'SAMPLE DATA — illustrative only, not a real measurement.'}</div>` : '';
+  const prov = (!v.sample && v.provenance) ? `<div class="provbar">${v.provenance}</div>` : '';
+  const topnote = banner + prov;
   // Layer 1 (UI side): out-of-roster name -> honest note, never a verdict about a real firm.
   if(v.state === 'NOT_IN_SAMPLE'){
-    let h = banner + `<div class="verdict">Not in this sample</div>
+    const head = v.sample ? 'Not in this sample' : 'Not in this dataset';
+    const lbl = v.sample ? 'Example firms in this demo' : 'Firms we have captured';
+    let h = topnote + `<div class="verdict">${head}</div>
       <p class="notsample">${v.message || ''}</p>`;
     if((v.examples||[]).length){
-      h += `<p class="muted" style="margin-top:8px">Example firms in this demo: ${(v.examples).map(n=>`<span class="pill">${n}</span>`).join('')}</p>`;
+      h += `<p class="muted" style="margin-top:8px">${lbl}: ${(v.examples).map(n=>`<span class="pill">${n}</span>`).join('')}</p>`;
     }
     // Lead moment: offer a real check. Measurement-free — no verdict/competitor language.
     rc.innerHTML = h; showLead('realcheck'); return;
@@ -237,7 +244,7 @@ function render(v){
       ${mon
         ? `<a class="cta calm" href="${mon}">Set up monthly monitoring</a>`
         : `<span class="cta soon" aria-disabled="true">Monthly monitoring — coming soon</span>`}`;
-    rc.innerHTML = banner + html + reportSection(v); showLead('report'); return;
+    rc.innerHTML = topnote + html + reportSection(v); showLead('report'); return;
   } else {
     html = `<div class="verdict">Not mapped yet</div>
       <p>We haven't mapped this market yet. Leave your email and we'll run your check.</p>`;
@@ -249,7 +256,7 @@ function render(v){
       : `<span class="cta soon" aria-disabled="true">Full audit checkout — coming soon</span>`;
   }
   html += reportSection(v);
-  rc.innerHTML = banner + html; showLead('report');
+  rc.innerHTML = topnote + html; showLead('report');
 }
 $('#send').onclick = async () => {
   if(!LAST) return;
