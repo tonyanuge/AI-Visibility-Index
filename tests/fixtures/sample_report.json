@@ -1,0 +1,59 @@
+{
+  "client": "Demo Accounting (SAMPLE)",
+  "market": "Accountants / Chartered Accountants",
+  "area": "Demo City and Demo Suburb",
+  "snapshot_date": "2026-06-27",
+  "prepared_by": "TraceLogic Limited",
+  "overall_verdict_label": "Weak / inconsistent AI visibility",
+  "overall_verdict_state": "WEAK_INCONSISTENT",
+  "verdicts": {
+    "Broad city visibility (small-business accountants)": "INVISIBLE",
+    "Tax-advice visibility (chartered accountants, tax advice)": "INVISIBLE",
+    "Local-area visibility (Demo Suburb)": "VISIBLE_BEATEN"
+  },
+  "competitor_counts": [
+    {"firm": "Alpha Accountants (SAMPLE)", "times_ahead": 5, "assistants": "ChatGPT; Claude; Perplexity"},
+    {"firm": "Beta Advisory (SAMPLE)", "times_ahead": 4, "assistants": "ChatGPT; Claude; Perplexity"},
+    {"firm": "Gamma & Co (SAMPLE)", "times_ahead": 4, "assistants": "Gemini; Grok; Perplexity"},
+    {"firm": "Delta Tax (SAMPLE)", "times_ahead": 3, "assistants": "ChatGPT; Claude; Gemini"},
+    {"firm": "Epsilon Partners (SAMPLE)", "times_ahead": 2, "assistants": "Gemini; Perplexity"}
+  ],
+  "sample_rows": [
+    {"theme": "Broad city", "prompt": "Best accountants in Demo City for small businesses", "assistants": "ChatGPT, Gemini, Perplexity", "checks": 3},
+    {"theme": "Local area", "prompt": "Best accountants near Demo Suburb", "assistants": "ChatGPT, Grok, Gemini, Claude, Perplexity", "checks": 5},
+    {"theme": "Tax advice", "prompt": "Best chartered accountants in Demo City for tax advice", "assistants": "ChatGPT, Grok, Gemini, Claude, Perplexity (some repeated)", "checks": 7}
+  ],
+  "mentioned_count": 2,
+  "invisible_count": 13,
+  "beaten_count": 2,
+  "executive_summary": [
+    "We asked five AI assistants the kinds of questions a potential client might type when looking for an accountant in this area, and recorded whether they recommended Demo Accounting (SAMPLE) and, if so, where it ranked.",
+    "In plain English: Demo Accounting (SAMPLE) does not appear strongly for broad city or tax-advice searches. It performs slightly better when the search is narrowed to its local suburb, but even there it is not consistently recommended across all assistants.",
+    "Across 15 captured checks, the business was recommended in only 2 (about 13%), and both were local-area searches where it ranked behind competitors. This is a first manual pilot sample, not a market-wide benchmark."
+  ],
+  "what_we_tested_prompts": [
+    "Best accountants in Demo City for small businesses",
+    "Best accountants near Demo Suburb",
+    "Best chartered accountants in Demo City for tax advice"
+  ],
+  "what_we_tested_assistants": ["ChatGPT", "Gemini", "Claude", "Grok", "Perplexity"],
+  "key_findings": [
+    "Not recommended for broad city searches in this sample.",
+    "Did not appear in any tax-advice searches in this sample.",
+    "Appeared in some local-area results, on two assistants.",
+    "When it did appear, it was ranked behind competitors, and its details were described accurately.",
+    "Competitors most often recommended ahead include Alpha Accountants (SAMPLE), Beta Advisory (SAMPLE), and Gamma & Co (SAMPLE)."
+  ],
+  "what_this_means": [
+    "Demo Accounting (SAMPLE) likely has a real-world presence, but AI assistants are not consistently surfacing it for buyer-intent searches. As more clients ask AI assistants for recommendations, a business left out of the shortlist can lose first-contact opportunities to firms that are named.",
+    "The opportunity is to strengthen the signals that help AI assistants recommend the business more often, more broadly, and higher up."
+  ],
+  "recommended_actions": [
+    "Strengthen core service pages for small-business accounting, tax advisory, payroll, VAT, audit, and company formation.",
+    "Improve local and city location signals across the website and listings.",
+    "Add clear who-we-help pages for SMEs, owner-managed businesses, startups, and local companies.",
+    "Build stronger third-party directory and review signals.",
+    "Create comparison and list-style content that AI systems can parse.",
+    "Monitor the same prompts monthly to track movement over time."
+  ]
+}

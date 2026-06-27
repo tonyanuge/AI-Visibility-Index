@@ -54,6 +54,20 @@ python scripts/import_tracker.py /path/to/ai_mystery_shopping_tracker.xlsx
 # or a CSV with the Run Log columns
 ```
 
+## Branded client report (.docx)
+Render a consistent, branded **AI Visibility Check** report from a structured JSON input.
+The generator is a *renderer*: the analyst supplies the narrative + evidence; the
+generator owns branding, colour, tables, the dated-snapshot disclaimer, and pagination.
+```bash
+PYTHONPATH=src python scripts/generate_report.py tests/fixtures/sample_report.json
+# -> writes data/exports/<client>_AI_Visibility_Check.docx   (data/ is gitignored)
+```
+Branding lives in `config/report.yaml`; drop an optional `config/assets/logo.png` to brand
+the cover (runs fine without it). Rendered `.docx` files go to `data/exports/` and are
+**never committed**. The report makes no guaranteed-ranking claim and renders the
+dated-snapshot disclaimer verbatim. PDF export, email delivery, and in-app generation are
+intentionally out of scope (future work).
+
 ## Architecture (UI never bypasses the backend)
 ```
 web/ (checker page)  ->  api/ (FastAPI)  ->  service/  ->  core/ (scoring) + store/ (sqlite)
