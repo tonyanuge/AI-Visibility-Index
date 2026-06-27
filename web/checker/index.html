@@ -97,9 +97,10 @@
     <select id="cell"></select>
     <label for="business">Your business name</label>
     <div id="bizWrap">
-      <input id="business" placeholder="e.g. Riverside Physio" autocomplete="off">
+      <input id="business" list="rosterList" placeholder="Type your business name…" autocomplete="off">
+      <datalist id="rosterList"></datalist>
     </div>
-    <p class="hint hide" id="sampleHint">Sample firms only — pick one of the example (DEMO) businesses below.</p>
+    <p class="hint hide" id="sampleHint">Demo data: start typing to see the example (DEMO) firms. Any other name returns a sample notice.</p>
     <button id="go">Show me my AI visibility — free</button>
     <p class="fineprint">Based on what the AIs returned under controlled conditions on a dated snapshot.
       Results vary by location and session. No ranking is guaranteed.</p>
@@ -108,8 +109,8 @@
   <div class="card hide" id="resultCard"></div>
 
   <div class="card hide" id="leadCard">
-    <h2>Get the full report</h2>
-    <p class="hint">Every question, the competitors ahead of you, and the fixes — sent to your inbox.</p>
+    <h2 id="leadTitle">Get the full report</h2>
+    <p class="hint" id="leadHint">Every question, the competitors ahead of you, and the fixes — sent to your inbox.</p>
     <label for="email">Email</label>
     <input id="email" type="email" placeholder="you@business.ie">
     <button id="send">Send my full report</button>
@@ -146,24 +147,36 @@ async function loadCells(){
   sel.onchange = loadRoster;
   loadRoster();
 }
-// Layer 2: for a sample (demo) market, restrict the business field to a dropdown of the
-// example (DEMO) firms so a viewer sees they are picking sample firms, not the real market.
+// Layer 2 (retrieval aid, NOT a gate): surface the sample (DEMO) firms as live typeahead
+// suggestions. The field stays a free-text <input> — typing any name is always allowed; the
+// SERVER-SIDE guard decides roster vs not-in-sample. We only populate the <datalist> options.
 async function loadRoster(){
   const val = $('#cell').value; if(!val) return;
   const [category, area] = val.split('|');
-  const wrap = $('#bizWrap'); const hint = $('#sampleHint');
+  const dl = $('#rosterList'); const hint = $('#sampleHint');
+  dl.innerHTML = '';
   try{
     const q = new URLSearchParams({category, area}).toString();
     const d = await (await fetch('/api/sample/roster?'+q)).json();
     if(d.sample && (d.businesses||[]).length){
-      wrap.innerHTML = '<select id="business"><option value="">— pick a sample firm —</option>'
-        + d.businesses.map(b=>`<option value="${b}">${b}</option>`).join('') + '</select>';
+      dl.innerHTML = d.businesses.map(b=>`<option value="${b}"></option>`).join('');
       hint.classList.remove('hide');
       return;
     }
   }catch(e){}
-  wrap.innerHTML = '<input id="business" placeholder="e.g. Riverside Physio" autocomplete="off">';
   hint.classList.add('hide');
+}
+// Reveal the lead form with the right copy for the current state, reset for re-use.
+function showLead(mode){
+  $('#leadCard').classList.remove('hide');
+  $('#leadDone').classList.add('hide'); $('#leadErr').classList.add('hide'); $('#send').disabled = false;
+  if(mode === 'realcheck'){
+    $('#leadTitle').textContent = 'Want your real business checked?';
+    $('#leadHint').textContent = "Leave your email and we'll run a real check.";
+  } else {
+    $('#leadTitle').textContent = 'Get the full report';
+    $('#leadHint').textContent = 'Every question, the competitors ahead of you, and the fixes — sent to your inbox.';
+  }
 }
 $('#go').onclick = async () => {
   const [category, area] = $('#cell').value.split('|');
@@ -205,7 +218,8 @@ function render(v){
     if((v.examples||[]).length){
       h += `<p class="muted" style="margin-top:8px">Example firms in this demo: ${(v.examples).map(n=>`<span class="pill">${n}</span>`).join('')}</p>`;
     }
-    rc.innerHTML = h; $('#leadCard').classList.add('hide'); return;
+    // Lead moment: offer a real check. Measurement-free — no verdict/competitor language.
+    rc.innerHTML = h; showLead('realcheck'); return;
   }
   let html = '';
   if(v.state === 'INVISIBLE'){
@@ -223,7 +237,7 @@ function render(v){
       ${mon
         ? `<a class="cta calm" href="${mon}">Set up monthly monitoring</a>`
         : `<span class="cta soon" aria-disabled="true">Monthly monitoring — coming soon</span>`}`;
-    rc.innerHTML = banner + html + reportSection(v); $('#leadCard').classList.remove('hide'); return;
+    rc.innerHTML = banner + html + reportSection(v); showLead('report'); return;
   } else {
     html = `<div class="verdict">Not mapped yet</div>
       <p>We haven't mapped this market yet. Leave your email and we'll run your check.</p>`;
@@ -235,7 +249,7 @@ function render(v){
       : `<span class="cta soon" aria-disabled="true">Full audit checkout — coming soon</span>`;
   }
   html += reportSection(v);
-  rc.innerHTML = banner + html; $('#leadCard').classList.remove('hide');
+  rc.innerHTML = banner + html; showLead('report');
 }
 $('#send').onclick = async () => {
   if(!LAST) return;

@@ -103,8 +103,11 @@ In a guarded cell, only the seeded **roster** (example `(DEMO)`) names get a ver
 name returns a neutral *"Not in this sample"* note — **never** a fabricated Invisible/Beaten/Strong
 verdict, and it names no competitors. This is enforced **server-side** in the checker/report
 services (a direct `/api/checker` or `/api/report` call with a real name is refused too — the
-report 404s, never a `.docx`). The business field is restricted to sample firms via
-`GET /api/sample/roster`, and every seeded result + the downloaded `.docx` carry an unmissable
+report 404s, never a `.docx`). The business field is a **typeahead combobox** — free text is
+always allowed, with the sample (DEMO) firms surfaced as live suggestions from
+`GET /api/sample/roster` (a retrieval aid, not the gate — the server guard is). A typed
+off-roster name returns the neutral note **and** offers a real check (reuses `/api/leads`).
+Every seeded result + the downloaded `.docx` carry an unmissable
 **"SAMPLE DATA — illustrative only, not a real measurement"** strip.
 
 ## Architecture (UI never bypasses the backend)

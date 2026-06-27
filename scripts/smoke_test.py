@@ -72,6 +72,8 @@ def main():
     check("GET / serves landing page", home.status_code == 200 and "checker" in home.text.lower())
     chk = client.get("/checker")
     check("GET /checker serves functional checker page", chk.status_code == 200 and "id=\"cell\"" in chk.text)
+    check("checker business field is a typeahead combobox (free text + datalist suggestions)",
+          'list="rosterList"' in chk.text and 'id="rosterList"' in chk.text and "<input id=\"business\"" in chk.text)
 
     print("\n[6] Protected lead export (ISSUE-2 + auth status correction)")
     from avix.api import ratelimit
@@ -156,6 +158,10 @@ def main():
     banner_in_docx = (dlb.status_code == 200 and
         "SAMPLE DATA" in _zip.ZipFile(_io.BytesIO(dlb.content)).read("word/document.xml").decode())
     check("roster report .docx contains the SAMPLE banner strip", banner_in_docx)
+    # NOT_IN_SAMPLE lead moment: a typed real name can still leave a lead via the existing /api/leads
+    lead = client.post("/api/leads", json={"business": "Nexus Accounting", "email": "owner@nexus.ie",
+           "category": acc_cat, "area": acc_area, "verdict": "NOT_IN_SAMPLE"})
+    check("NOT_IN_SAMPLE lead captured via existing /api/leads (200)", lead.status_code == 200)
 
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")
