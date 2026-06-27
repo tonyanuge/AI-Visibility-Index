@@ -228,16 +228,33 @@ function standingDetail(v){
 }
 // Competitors collapsed by default for every state, framed honestly as "Other firms the AI
 // recommended" — no adversarial ranking language. INVISIBLE gets a stronger, more prominent prompt.
+// LAZY: the names are NOT rendered into the initial DOM — the panel ships empty and the names
+// (held in JS from the already-fetched JSON) are injected only when the user opens the reveal.
+function competitorFirms(v){
+  return (v.recommended_instead && v.recommended_instead.length) ? v.recommended_instead : (v.ahead_of_you || []);
+}
 function competitorReveal(v){
-  const firms = (v.recommended_instead && v.recommended_instead.length) ? v.recommended_instead : (v.ahead_of_you || []);
+  const firms = competitorFirms(v);
   if(!firms.length) return '';
   const invisible = v.state==='INVISIBLE';
   const prompt = invisible ? 'See which firms AI is recommending in your place'
                            : 'See the other firms the AI recommended';
   return `<details class="reveal${invisible?' strong':''}">
       <summary>${prompt}</summary>
-      <p class="muted" style="margin:10px 0 0">Other firms the AI recommended: ${firms.map(n=>`<span class="pill">${n}</span>`).join('')}</p>
+      <p class="muted" data-reveal-panel style="margin:10px 0 0">Other firms the AI recommended: <span data-reveal-pills></span></p>
     </details>`;
+}
+// Inject the names into the reveal panel on first OPEN only. Idempotent (no duplicate pills);
+// a fresh listener is attached per render. Names come from JS, never the initial DOM.
+function wireReveal(rc, firms){
+  const d = rc.querySelector('details.reveal'); if(!d || !firms.length) return;
+  d.addEventListener('toggle', () => {
+    if(!d.open) return;                                  // only on open, not on close
+    const span = d.querySelector('[data-reveal-pills]');
+    if(!span || span.dataset.filled) return;            // idempotent
+    span.innerHTML = firms.map(n=>`<span class="pill">${n}</span>`).join('');
+    span.dataset.filled = '1';
+  });
 }
 function stateCtas(v, cfg, price){
   if(v.state==='STRONG'){
@@ -288,7 +305,9 @@ function render(v){
       + competitorReveal(v)
       + stateCtas(v, cfg, price)
       + downloadButton();
-    rc.innerHTML = topnote + html; showLead('report'); return;
+    rc.innerHTML = topnote + html;
+    wireReveal(rc, competitorFirms(v));   // names injected on first reveal-open, not into the initial DOM
+    showLead('report'); return;
   }
   // NOT_COVERED — market not mapped yet (unchanged)
   rc.innerHTML = topnote + `<div class="verdict">Not mapped yet</div>
