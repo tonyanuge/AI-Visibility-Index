@@ -99,7 +99,8 @@ def main():
     ratelimit.configure({"trust_forwarded_for": False, "limits": {
         "checker": {"limit": 2, "window_seconds": 60},
         "leads":   {"limit": 10, "window_seconds": 60}}})
-    body = {"business": "RateTest", "category": "Physiotherapists", "area": "Dublin"}
+    # use a roster (DEMO) name so the guardrail returns a verdict, not NOT_IN_SAMPLE
+    body = {"business": "Riverside Physio (DEMO)", "category": "Physiotherapists", "area": "Dublin"}
     s1 = client.post("/api/checker", json=body).status_code
     s2 = client.post("/api/checker", json=body).status_code
     blocked = client.post("/api/checker", json=body)
@@ -133,6 +134,28 @@ def main():
     check("report is a .docx attachment",
           "attachment" in dl.headers.get("content-disposition", "")
           and "wordprocessingml" in dl.headers.get("content-type", ""))
+    check("seeded roster result carries SAMPLE banner", bool(rr.get("sample_banner")))
+
+    print("\n[9] Demo guardrail (defamation safety — real name must NOT get a verdict)")
+    import io as _io, zipfile as _zip
+    ratelimit.reset()
+    real = client.post("/api/checker", json={"business": "Nexus Accounting",
+                       "category": acc_cat, "area": acc_area}).json()
+    check("real name in demo market -> NOT_IN_SAMPLE (no fabricated verdict)",
+          real["state"] == "NOT_IN_SAMPLE")
+    check("NOT_IN_SAMPLE names no competitors about the real business",
+          "recommended_instead" not in real and "ahead_of_you" not in real and "report" not in real)
+    check("NOT_IN_SAMPLE carries SAMPLE banner", bool(real.get("sample_banner")))
+    rep = client.get("/api/report", params={"business": "Nexus Accounting",
+                     "category": acc_cat, "area": acc_area})
+    check("/api/report refuses a real name (404, no docx)", rep.status_code == 404)
+    ros = client.get("/api/sample/roster", params={"category": acc_cat, "area": acc_area}).json()
+    check("/api/sample/roster lists sample firms", ros["sample"] is True and len(ros["businesses"]) > 0)
+    dlb = client.get("/api/report", params={"business": "Liffey & Quay Accountants (DEMO)",
+                     "category": acc_cat, "area": acc_area})
+    banner_in_docx = (dlb.status_code == 200 and
+        "SAMPLE DATA" in _zip.ZipFile(_io.BytesIO(dlb.content)).read("word/document.xml").decode())
+    check("roster report .docx contains the SAMPLE banner strip", banner_in_docx)
 
     print("\n" + "=" * 48)
     print(f"SMOKE TEST: {len(PASS)} passed, {len(FAIL)} failed")

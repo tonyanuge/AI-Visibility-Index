@@ -1,0 +1,11 @@
+# Demo / sample-data guardrail (defamation safety).
+#
+# A cell is treated as SAMPLE (guarded) UNLESS it is provably all-real — i.e. it has
+# mentions and EVERY mention carries a known, non-demo source. Uncertainty fails toward
+# guarded: a cell with any demo-source row, or any missing/unknown source, is guarded.
+# In a guarded cell, only roster (example) names get a verdict; any other name returns a
+# neutral "not in this sample" note — never a fabricated INVISIBLE/Beaten/Strong verdict
+# about a real business. Strings below are data, not code (no business names hard-coded).
+demo_sources: ["Demo"]
+sample_banner: "SAMPLE DATA — illustrative only, not a real measurement."
+not_in_sample_message: "Not in this sample — this demo covers a fixed set of example firms."

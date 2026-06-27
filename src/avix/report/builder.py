@@ -132,6 +132,10 @@ def build_report(data: ReportData, branding: dict) -> bytes:
     _build_footer(doc, branding, company, data.client)
     _enable_update_fields(doc)  # refresh PAGE/NUMPAGES fields on open (Word / Google Docs)
 
+    # ---- unmissable SAMPLE strip at the very top (demo reports only) ----
+    if getattr(data, "sample_banner", ""):
+        _sample_strip(doc, branding, data.sample_banner)
+
     # ---- R1 optional logo (cover) ----
     if LOGO.exists():
         try:
@@ -231,6 +235,19 @@ def _kv(doc, branding, label, value, value_size=11, value_bold=False):
     p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(2)
     _font(p.add_run(f"{label}: "), branding, 11, bold=True)
     _font(p.add_run(value), branding, value_size, bold=value_bold)
+
+
+def _sample_strip(doc, branding, text):
+    """Full-width red strip with white bold text — marks the whole report as sample data."""
+    red = branding.get("verdict_colors", {}).get("INVISIBLE", "C0392B")
+    table = doc.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.LEFT
+    _set_cell_margins(table, top=110, bottom=110, left=160, right=160)
+    cell = table.rows[0].cells[0]
+    _shade(cell, red)
+    cell.width = Inches(6.6)
+    _font(cell.paragraphs[0].add_run(text), branding, 12, bold=True, color="FFFFFF")
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
 
 def _callout(doc, branding, text):

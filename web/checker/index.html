@@ -65,6 +65,10 @@
   .cta.soon{background:#eef4f3;color:var(--muted);border:1px solid var(--line);cursor:default}
   .ok{color:var(--teal-d);font-size:14px;margin-top:10px}
   .err{color:var(--signal);font-size:14px;margin-top:10px;font-weight:500}
+  /* unmissable sample-data strip */
+  .samplebar{background:var(--signal);color:#fff;font-weight:700;font-size:13px;letter-spacing:.02em;
+    border-radius:9px;padding:10px 14px;margin-bottom:14px}
+  .notsample{font-size:15px;color:var(--ink-2)}
   /* footer — matches landing */
   footer{padding:32px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px;margin-top:8px}
   footer .wrap{max-width:1040px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
@@ -92,7 +96,10 @@
     <label for="cell">Market</label>
     <select id="cell"></select>
     <label for="business">Your business name</label>
-    <input id="business" placeholder="e.g. Riverside Physio" autocomplete="off">
+    <div id="bizWrap">
+      <input id="business" placeholder="e.g. Riverside Physio" autocomplete="off">
+    </div>
+    <p class="hint hide" id="sampleHint">Sample firms only — pick one of the example (DEMO) businesses below.</p>
     <button id="go">Show me my AI visibility — free</button>
     <p class="fineprint">Based on what the AIs returned under controlled conditions on a dated snapshot.
       Results vary by location and session. No ranking is guaranteed.</p>
@@ -136,6 +143,27 @@ async function loadCells(){
   const sel = $('#cell');
   if(!cells.length){ sel.innerHTML = '<option>No markets mapped yet</option>'; return; }
   sel.innerHTML = cells.map(c => `<option value="${c.category}|${c.area}">${c.category} — ${c.area}</option>`).join('');
+  sel.onchange = loadRoster;
+  loadRoster();
+}
+// Layer 2: for a sample (demo) market, restrict the business field to a dropdown of the
+// example (DEMO) firms so a viewer sees they are picking sample firms, not the real market.
+async function loadRoster(){
+  const val = $('#cell').value; if(!val) return;
+  const [category, area] = val.split('|');
+  const wrap = $('#bizWrap'); const hint = $('#sampleHint');
+  try{
+    const q = new URLSearchParams({category, area}).toString();
+    const d = await (await fetch('/api/sample/roster?'+q)).json();
+    if(d.sample && (d.businesses||[]).length){
+      wrap.innerHTML = '<select id="business"><option value="">— pick a sample firm —</option>'
+        + d.businesses.map(b=>`<option value="${b}">${b}</option>`).join('') + '</select>';
+      hint.classList.remove('hide');
+      return;
+    }
+  }catch(e){}
+  wrap.innerHTML = '<input id="business" placeholder="e.g. Riverside Physio" autocomplete="off">';
+  hint.classList.add('hide');
 }
 $('#go').onclick = async () => {
   const [category, area] = $('#cell').value.split('|');
@@ -168,6 +196,17 @@ function render(v){
   const rc = $('#resultCard'); rc.classList.remove('hide');
   const cfg = v.config || {};
   const price = cfg.audit_price_eur || '';
+  // Layer 3: unmissable SAMPLE strip on every seeded result.
+  const banner = v.sample ? `<div class="samplebar">${v.sample_banner || 'SAMPLE DATA — illustrative only, not a real measurement.'}</div>` : '';
+  // Layer 1 (UI side): out-of-roster name -> honest note, never a verdict about a real firm.
+  if(v.state === 'NOT_IN_SAMPLE'){
+    let h = banner + `<div class="verdict">Not in this sample</div>
+      <p class="notsample">${v.message || ''}</p>`;
+    if((v.examples||[]).length){
+      h += `<p class="muted" style="margin-top:8px">Example firms in this demo: ${(v.examples).map(n=>`<span class="pill">${n}</span>`).join('')}</p>`;
+    }
+    rc.innerHTML = h; $('#leadCard').classList.add('hide'); return;
+  }
   let html = '';
   if(v.state === 'INVISIBLE'){
     html = `<div class="verdict invisible">Invisible</div>
@@ -184,7 +223,7 @@ function render(v){
       ${mon
         ? `<a class="cta calm" href="${mon}">Set up monthly monitoring</a>`
         : `<span class="cta soon" aria-disabled="true">Monthly monitoring — coming soon</span>`}`;
-    rc.innerHTML = html + reportSection(v); $('#leadCard').classList.remove('hide'); return;
+    rc.innerHTML = banner + html + reportSection(v); $('#leadCard').classList.remove('hide'); return;
   } else {
     html = `<div class="verdict">Not mapped yet</div>
       <p>We haven't mapped this market yet. Leave your email and we'll run your check.</p>`;
@@ -196,7 +235,7 @@ function render(v){
       : `<span class="cta soon" aria-disabled="true">Full audit checkout — coming soon</span>`;
   }
   html += reportSection(v);
-  rc.innerHTML = html; $('#leadCard').classList.remove('hide');
+  rc.innerHTML = banner + html; $('#leadCard').classList.remove('hide');
 }
 $('#send').onclick = async () => {
   if(!LAST) return;

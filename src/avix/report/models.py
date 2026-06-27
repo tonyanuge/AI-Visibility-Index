@@ -47,6 +47,7 @@ class ReportData:
     key_findings: list                  # list[str] bullets
     what_this_means: list               # list[str] paragraphs
     recommended_actions: list           # list[str] bullets
+    sample_banner: str = ""             # if set, renders an unmissable SAMPLE strip at the top
 
     # ---- derived (single source of truth = the structured data) ----
     @property
@@ -80,4 +81,5 @@ class ReportData:
             key_findings=list(d.get("key_findings", [])),
             what_this_means=list(d.get("what_this_means", [])),
             recommended_actions=list(d.get("recommended_actions", [])),
+            sample_banner=str(d.get("sample_banner", "")),
         )
