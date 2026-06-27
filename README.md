@@ -82,6 +82,19 @@ the cover (runs fine without it). Rendered `.docx` files go to `data/exports/` a
 dated-snapshot disclaimer verbatim. PDF export, email delivery, and in-app generation are
 intentionally out of scope (future work).
 
+## Demo journey (search → on-screen + downloadable report)
+Seed a synthetic **Accountants — Dublin** market so a search returns a real verdict:
+```bash
+PYTHONPATH=src python scripts/seed_accountants.py   # synthetic "(DEMO)" firms only
+```
+On `/checker`, searching a business now shows an **on-screen report** — verdict, competitors
+recommended ahead, a mention-rate stat (share of recommendations / count + % invisible), and
+data-derived key findings (read from the scoring output) — plus a **"Download report"** button
+that streams the branded `.docx` from `GET /api/report?business=&category=&area=` (generated
+in-memory, never written to a repo path; rate-limited per IP). The auto-report states only what
+the captured data shows — no tailored advice or predictions — and carries the same dated-snapshot
+disclaimer. Demo data is synthetic and **not** a publishable Index.
+
 ## Architecture (UI never bypasses the backend)
 ```
 web/ (checker page)  ->  api/ (FastAPI)  ->  service/  ->  core/ (scoring) + store/ (sqlite)

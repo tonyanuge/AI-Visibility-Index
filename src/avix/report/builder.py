@@ -153,8 +153,8 @@ def build_report(data: ReportData, branding: dict) -> bytes:
 
     # ---- R4 headline-stat callout (computed from structured data, R7) ----
     _callout(doc, branding,
-             f"{data.mention_rate_pct}% — recommended in {data.mentioned_count} "
-             f"of {data.total_checks} checks")
+             f"{data.mentioned_count} of {data.total_checks} captured AI recommendations "
+             f"name this business ({data.mention_rate_pct}% share)")
 
     # ---- 1. Executive Summary ----
     _heading(doc, branding, "1. Executive Summary")
@@ -167,7 +167,7 @@ def build_report(data: ReportData, branding: dict) -> bytes:
     _bullets(doc, branding, data.what_we_tested_prompts)
     _para(doc, branding, "AI assistants tested:", bold=True, space_after=2)
     _bullets(doc, branding, data.what_we_tested_assistants)
-    _para(doc, branding, f"How the sample was structured ({data.total_checks} checks in total):",
+    _para(doc, branding, f"How the captured recommendations break down ({data.total_checks} in total):",
           bold=True, space_after=4)
     _sample_table(doc, branding, data)
 
@@ -184,9 +184,9 @@ def build_report(data: ReportData, branding: dict) -> bytes:
     _verdict_table(doc, branding, data)
     _verdict_key(doc, branding)
     _para(doc, branding,
-          f"Supporting numbers from this sample: {data.total_checks} checks · "
-          f"mentioned {data.mentioned_count} · invisible {data.invisible_count} · "
-          f"visible-but-beaten {data.beaten_count} · mention rate ≈ {data.mention_rate_pct}%.",
+          f"Supporting numbers from this sample: {data.total_checks} captured AI recommendations · "
+          f"named {data.mentioned_count} · invisible {data.invisible_count} · "
+          f"visible-but-beaten {data.beaten_count} · share of recommendations ≈ {data.mention_rate_pct}%.",
           size=10, color=colors.get("muted", "5D6F76"), space_before=8, space_after=10)
 
     # ---- 5. What This Means ----
@@ -194,8 +194,8 @@ def build_report(data: ReportData, branding: dict) -> bytes:
     for para in data.what_this_means:
         _para(doc, branding, para)
 
-    # ---- 6. Recommended Actions ----
-    _heading(doc, branding, "6. Recommended Actions")
+    # ---- 6. Scope of this report (renders data.recommended_actions as scope notes) ----
+    _heading(doc, branding, "6. Scope of this report")
     _bullets(doc, branding, data.recommended_actions)
 
     # ---- 7. Disclaimer / Boundary (R6 verbatim) ----
@@ -253,7 +253,7 @@ def _sample_table(doc, branding, data):
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
     _set_cell_margins(table)
     widths = [Inches(1.3), Inches(2.7), Inches(2.0), Inches(0.7)]
-    headers = ["Search theme", "Prompt", "Assistants captured", "Checks"]
+    headers = ["Search theme", "Prompt", "Assistants captured", "Count"]
     for c, txt, w in zip(table.rows[0].cells, headers, widths):
         c.width = w
         _shade(c, colors.get("callout_bg", "EEF4F3"))

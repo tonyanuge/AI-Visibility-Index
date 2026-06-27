@@ -10,3 +10,4 @@ limits:
   checker: { limit: 30, window_seconds: 60 }   # public read of verdicts
   leads:   { limit: 10, window_seconds: 60 }   # public lead capture
   export:  { limit: 5,  window_seconds: 60 }   # tightest — admin export is the brute-force target
+  report:  { limit: 10, window_seconds: 60 }   # .docx generation is heavier than a read

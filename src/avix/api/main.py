@@ -1,14 +1,16 @@
-import csv, io, hmac
+import csv, io, hmac, re
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Header, Depends
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, Response
 from .. import config
 from ..store import db
-from ..service import index_service, checker_service, lead_service
+from ..service import index_service, checker_service, lead_service, report_service
 from ..audit import audit_log
 from ..ingest.runners.llm import available_runners
 from .schemas import CheckRequest, LeadRequest
 from .ratelimit import rate_limit
+
+_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 settings = config.load_settings()
 app = FastAPI(title=settings.get("app_name", "AI Visibility Index"), version="0.1.0")
@@ -55,6 +57,8 @@ def index_cell(category: str, area: str):
 def checker(req: CheckRequest):
     with _conn() as c:
         v = checker_service.check(c, req.business, req.category, req.area)
+        # on-screen report payload (mention stat + key findings + competitors), reusing scoring
+        v["report"] = report_service.on_screen(c, req.business, req.category, req.area, v)
     v["config"] = {"audit_url": settings.get("audit_url"),
                    "monitoring_url": settings.get("monitoring_url"),
                    "audit_price_eur": settings.get("audit_price_eur")}
@@ -81,6 +85,17 @@ def leads_export(x_admin_export_token: str | None = Header(default=None)):
     buf.seek(0)
     return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=leads.csv"})
+
+@app.get("/api/report", dependencies=[Depends(rate_limit("report"))])
+def report_download(business: str, category: str, area: str):
+    """Branded .docx for business+market, generated in-memory (never written to a repo path)."""
+    with _conn() as c:
+        blob = report_service.build_docx(c, business, category, area)
+    if blob is None:
+        raise HTTPException(404, "This category/area has not been mapped yet.")
+    safe = re.sub(r"[^A-Za-z0-9]+", "_", business).strip("_") or "report"
+    return Response(content=blob, media_type=_DOCX_MIME,
+        headers={"Content-Disposition": f'attachment; filename="{safe}_AI_Visibility_Check.docx"'})
 
 @app.get("/")
 def home():
